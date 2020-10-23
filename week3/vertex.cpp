@@ -9,9 +9,17 @@ void vertex::set_value(int value) { val = value; }
 
 std::vector<edge_t> vertex::edges() const {
     std::vector<edge_t> vec;
+    vec.reserve(e.size());
     for (auto [_, edge] : e)
         vec.emplace_back(edge);
-    vec.shrink_to_fit();
+    return vec;
+}
+
+std::vector<vertex_t> vertex::neighbors() const {
+    std::vector<vertex_t> vec;
+    vec.reserve(e.size());
+    for (auto [v,_]:e)
+        vec.emplace_back(v);
     return vec;
 }
 

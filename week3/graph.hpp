@@ -37,6 +37,7 @@ class vertex {
     int value() const;
     void set_value(int value);
     std::vector<edge_t> edges() const;
+    std::vector<vertex_t> neighbors() const;
     edge_t edge_to(vertex_t v);
     bool adjacent(vertex_t v) const;
     void add_directed_edge(vertex_t v, int w);
@@ -59,19 +60,21 @@ class graph {
     std::vector<class edge> edges() const;
 
     vertex get_vertex(int u);
+    int vertex_value(int u);
+    std::vector<edge> edges(int u);
+    std::vector<vertex> neighbors(int u);
     void add_vertex(int u, int value);
     void set_vertex_value(int u, int value);
-    int vertex_value(int u);
     void remove_vertex(int u);
     bool adjacent(int from, int to);
 
     edge get_edge(int from, int to);
+    int edge_weight(int from, int to);
+    void set_edge_weight(int from, int to, int w);
     void add_directed_edge(int from, int to, int w);
     void add_edge(int from, int to, int w);
     void add_edge(int from, int to, int w, int re_w);
     void remove_edge(int from, int to);
-    int edge_weight(int from, int to);
-    void set_edge_weight(int from, int to, int w);
 };
 
 #endif /* GRAPH_H */

@@ -26,6 +26,26 @@ vertex graph::get_vertex(int u) {
     return *v[u];
 }
 
+std::vector<vertex> graph::neighbors(int u) {
+    vertex_check(true, u, "Vertex not found");
+    std::vector<vertex_t> neis = v[u]->neighbors();
+    std::vector<vertex> vec;
+    vec.reserve(neis.size());
+    std::transform(std::begin(neis), std::end(neis), std::back_inserter(vec),
+                   [](auto v) { return *v; });
+    return vec;
+}
+
+std::vector<edge> graph::edges(int u) {
+    vertex_check(true, u, "Vertex not found");
+    std::vector<edge_t> es = v[u]->edges();
+    std::vector<edge> vec;
+    vec.reserve(es.size());
+    std::transform(std::begin(es), std::end(es), std::back_inserter(vec),
+                   [](auto e) { return *e; });
+    return vec;
+}
+
 void graph::add_vertex(int u, int value) {
     vertex_check(false, u, "Vertex already exists");
     v[u] = new vertex{u, value};
