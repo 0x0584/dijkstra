@@ -49,15 +49,19 @@ class vertex {
 
 class graph {
     std::unordered_map<int, vertex_t> v;
+    int n_vertices;
+    double edge_density;
 
     void vertex_check(bool in, int id, std::string_view msg);
 
   public:
+    graph(int n_vertices, double edge_density);
+    graph(std::vector<std::pair<int, int>> vertices, double edge_density);
     graph();
     ~graph();
 
-    std::vector<class vertex> vertices() const;
-    std::vector<class edge> edges() const;
+    std::vector<vertex> vertices() const;
+    std::vector<edge> edges() const;
 
     vertex get_vertex(int u);
     int vertex_value(int u);

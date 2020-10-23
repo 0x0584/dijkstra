@@ -1,14 +1,14 @@
-* Submission Tasks [0/5]
+* Submission Tasks [1/5]
 
-- [ ] constructors for declaring and initializing a graph
+- [X] constructors for declaring and initializing a graph
 - [ ] Have a procedure that produces a randomly generated set of edges with positive distances
 - [ ] The random graph procedure should have edge density as a parameter and distance range as a parameter.  So a graph whose density is 0.1 would have 10% of its edges picked at random and its edge distance would be selected at random from the distance range.  The procedure should run through all possible undirected edges, say (i,j) and place the edge in the graph if a random probability calculation is less than the density
 - [ ] Compute for a set of randomly generated graphs an average shortest path
 - [ ] Printout of program, 200 words on what you learned, and output showing the average path length calculation.  Use densities: 20% and 40% on a graph of 50 nodes with a distance range of 1.0 to 10.0.  To get an average path length, compute the 49 paths: 1 to 2, 1 to 3, 1 to 4, …, 1 to 50.  In an instance where there is no path between 1 and n, omit that value from the average
 
-* Shortest Path Tasks [0/3]
+* Shortest Path Tasks [1/3]
 
-+ [ ] Graph (G = (V, E)
++ [X] Graph (G = (V, E)
 + [ ] PriorityQueue
 + [ ] ShortestPath algorithm.
 
@@ -28,6 +28,7 @@
 #+begin_quote
 /Note in some cases such as add(G, x, y) you may also want to have the edge carry along its cost. Another approach could be to use (x, y) to index a cost stored in an associated array or map./
 #+end_quote
+
 ** Priority Queue [0/6]
 
 + [ ] chgPrioirity(PQ, priority): changes the priority (node value) of queue element.
@@ -36,6 +37,7 @@
 + [ ] Insert(PQ, queue_element): insert queue_element into queue
 + [ ] top(PQ):returns the top element of the queue.
 + [ ] size(PQ): return the number of queue_elements.
+
 ** ShortestPath [0/3]
 
 + [ ] vertices(List): list of vertices in G(V,E).
