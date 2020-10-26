@@ -2,39 +2,30 @@
 #define PQ_H
 
 #include <functional>
-#include <iterator>
 #include <set>
 #include <stdexcept>
 #include <unordered_map>
 
+using item = std::pair<int, int>;
+
 class PQ {
-    struct Item {
-        struct cmp {
-            bool operator()(const Item &u, const Item &v) const;
-        };
-
-        Item(int id, int priority);
-
-        int id() const;
-        int priority() const;
-        void priority(int priority);
-
-      private:
-        int _id, _priority;
+    struct cmp {
+        bool operator()(const item &u, const item &v) const;
     };
 
-    std::unordered_map<int, Item> items;
-    std::set<std::reference_wrapper<Item>, Item::cmp> pq;
+    std::unordered_map<int, item> items;
+    std::set<std::reference_wrapper<item>, cmp> pq;
 
   public:
     PQ() = default;
 
     void push(int u, int priority = 0);
-    void push(std::pair<int, int> pair);
     void change_priority(int u, int priority);
-    void change_priority(std::pair<int, int> pair);
+    void push(item pair);
+    void change_priority(item pair);
     void pop();
-    int top() const;
+    item top() const;
+    const item &retrieve(int u) const;
     bool contains(int u) const noexcept;
     bool empty() const noexcept;
     std::size_t size() const noexcept;
@@ -49,12 +40,10 @@ class PQ {
       public:
         explicit iterator(iterator_type itr);
 
-        int operator*() const;
-        int operator->() const;
-
+        item operator*() const noexcept;
+        item operator->() const noexcept;
         bool operator==(const iterator &rhs) const;
         bool operator!=(const iterator &rhs) const;
-
         iterator &operator+=(const int &incr);
         iterator &operator-=(const int &incr);
         iterator operator++();
