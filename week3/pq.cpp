@@ -3,6 +3,37 @@
 
 #include "pq.hpp"
 
+bool PQ::Item::cmp::operator()(const Item &u, const Item &v) const {
+    return u.priority() < v.priority();
+}
+PQ::Item::Item(int id, int priority) : _id(id), _priority(priority) {}
+int PQ::Item::id() const { return _id; }
+int PQ::Item::priority() const { return _priority; }
+void PQ::Item::priority(int priority) { _priority = priority; }
+
+PQ::iterator &PQ::iterator::advance(int incr) {
+    return std::advance(itr, incr), *this;
+}
+PQ::iterator::iterator(iterator_type itr) : itr(itr) {}
+int PQ::iterator::operator*() const { return itr->get().id(); }
+int PQ::iterator::operator->() const { return itr->get().id(); }
+bool PQ::iterator::operator==(const iterator &rhs) const {
+    return itr == rhs.itr;
+}
+bool PQ::iterator::operator!=(const iterator &rhs) const {
+    return itr != rhs.itr;
+}
+PQ::iterator &PQ::iterator::operator+=(const int &incr) {
+    return advance(incr);
+}
+PQ::iterator &PQ::iterator::operator-=(const int &incr) {
+    return advance(incr);
+}
+PQ::iterator PQ::iterator::operator++() { return advance(1); }
+PQ::iterator PQ::iterator::operator--() { return advance(1); }
+PQ::iterator &PQ::iterator::operator++(int) { return advance(1); }
+PQ::iterator &PQ::iterator::operator--(int) { return advance(1); }
+
 void PQ::push(int u, int priority) {
     if (not items.emplace(u, Item{u, priority}).second)
         throw std::runtime_error(std::to_string(u) + " already exists");
@@ -46,19 +77,14 @@ bool PQ::empty() const noexcept { return not size(); }
 
 std::size_t PQ::size() const noexcept { return pq.size(); }
 
-void PQ::unit_testing() noexcept {
-    constexpr auto limit = 0x0584;
-    auto next_random = []() {
-        // static std::knuth_b gen;
-        static std::random_device gen;
-        static std::uniform_int_distribution<int> u(0, limit);
-        return u(gen);
-    };
+PQ::iterator PQ::begin() const { return iterator(std::begin(pq)); }
+PQ::iterator PQ::end() const { return iterator(std::end(pq)); }
 
+void PQ::unit_testing() noexcept {
     PQ pq;
 
-    for (auto to = next_random() + 1, loop = 0; loop < to; ++loop) {
-        auto u = next_random(), p = next_random();
+    for (auto to = 10, loop = 0; loop < to; ++loop) {
+        auto u = loop, p = to - loop;
         std::cout << "u: " << u << " p: " << p << "\n";
         try {
             pq.push(u, p);

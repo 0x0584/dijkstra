@@ -10,16 +10,14 @@
 class PQ {
     struct Item {
         struct cmp {
-            bool operator()(const Item &u, const Item &v) const {
-                return u.priority() > v.priority();
-            }
+            bool operator()(const Item &u, const Item &v) const;
         };
 
-        Item(int id, int priority) : _id(id), _priority(priority) {}
+        Item(int id, int priority);
 
-        int id() const { return _id; }
-        int priority() const { return _priority; }
-        void priority(int priority) { _priority = priority; }
+        int id() const;
+        int priority() const;
+        void priority(int priority);
 
       private:
         int _id, _priority;
@@ -46,28 +44,28 @@ class PQ {
         using iterator_type = decltype(pq)::iterator;
         iterator_type itr;
 
-        iterator &advance(int incr) { return std::advance(itr, incr), *this; }
+        iterator &advance(int incr);
 
       public:
-        explicit iterator(iterator_type itr) : itr(itr) {}
+        explicit iterator(iterator_type itr);
 
-        int operator*() const { return itr->get().id(); }
-        int operator->() const { return itr->get().id(); }
+        int operator*() const;
+        int operator->() const;
 
-        bool operator==(const iterator &rhs) const { return itr == rhs.itr; }
-        bool operator!=(const iterator &rhs) const { return itr != rhs.itr; }
+        bool operator==(const iterator &rhs) const;
+        bool operator!=(const iterator &rhs) const;
 
-        iterator &operator+=(const int &incr) { return advance(incr); }
-        iterator &operator-=(const int &incr) { return advance(incr); }
-        iterator operator++() { return advance(1); }
-        iterator operator--() { return advance(1); }
-        iterator &operator++(int) { return advance(1); }
-        iterator &operator--(int) { return advance(1); }
+        iterator &operator+=(const int &incr);
+        iterator &operator-=(const int &incr);
+        iterator operator++();
+        iterator operator--();
+        iterator &operator++(int);
+        iterator &operator--(int);
     };
 
   public:
-    iterator begin() const { return iterator(std::begin(pq)); }
-    iterator end() const { return iterator(std::end(pq)); }
+    iterator begin() const;
+    iterator end() const;
 
     static void unit_testing() noexcept;
 };
