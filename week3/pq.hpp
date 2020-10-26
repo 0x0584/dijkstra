@@ -2,36 +2,74 @@
 #define PQ_H
 
 #include <functional>
-#include <map>
+#include <iterator>
+#include <set>
 #include <stdexcept>
+#include <unordered_map>
 
-template <typename Item = int> class PQ {
-    std::unordered_map<Item, int> items;
-    std::multimap<int, std::reference_wrapper<Item>> pq;
+class PQ {
+    struct Item {
+        struct cmp {
+            bool operator()(const Item &u, const Item &v) const {
+                return u.priority() > v.priority();
+            }
+        };
+
+        Item(int id, int priority) : _id(id), _priority(priority) {}
+
+        int id() const { return _id; }
+        int priority() const { return _priority; }
+        void priority(int priority) { _priority = priority; }
+
+      private:
+        int _id, _priority;
+    };
+
+    std::unordered_map<int, Item> items;
+    std::set<std::reference_wrapper<Item>, Item::cmp> pq;
 
   public:
-    PQ() {}
+    PQ() = default;
 
-    void push(Item u, int priority = 0) {
-        auto pair = std::make_pair(priority, u);
-        auto pair2 =
-            std::make_pair(std::reference_wrapper(pair->second), priority);
-        pq.emplace(priority, u);
-    }
+    void push(int u, int priority = 0);
+    void push(std::pair<int, int> pair);
+    void change_priority(int u, int priority);
+    void change_priority(std::pair<int, int> pair);
+    void pop();
+    int top() const;
+    bool contains(int u) const noexcept;
+    bool empty() const noexcept;
+    std::size_t size() const noexcept;
 
-    void change_priority(Item u, int priority) {}
+  private:
+    class iterator {
+        using iterator_type = decltype(pq)::iterator;
+        iterator_type itr;
 
-    void pop() {}
+        iterator &advance(int incr) { return std::advance(itr, incr), *this; }
 
-    bool contains(Item u) const { return items.find(u) != std::end(items); }
+      public:
+        explicit iterator(iterator_type itr) : itr(itr) {}
 
-    Item &top() const {
-        if (not size())
-            throw std::runtime_error("PQ is empty");
-        return pq.begin()->second;
-    }
+        int operator*() const { return itr->get().id(); }
+        int operator->() const { return itr->get().id(); }
 
-    size_t size() const { return pq.size(); }
+        bool operator==(const iterator &rhs) const { return itr == rhs.itr; }
+        bool operator!=(const iterator &rhs) const { return itr != rhs.itr; }
+
+        iterator &operator+=(const int &incr) { return advance(incr); }
+        iterator &operator-=(const int &incr) { return advance(incr); }
+        iterator operator++() { return advance(1); }
+        iterator operator--() { return advance(1); }
+        iterator &operator++(int) { return advance(1); }
+        iterator &operator--(int) { return advance(1); }
+    };
+
+  public:
+    iterator begin() const { return iterator(std::begin(pq)); }
+    iterator end() const { return iterator(std::end(pq)); }
+
+    static void unit_testing() noexcept;
 };
 
 #endif /* PQ_H */

@@ -33,31 +33,27 @@ int main(int, char *[]) {
         std::cout << std::endl;
     };
 
-    std::unordered_map<item, priority> items;
-    std::multimap<ref_t<priority>, ref_t<item>> pq;
     std::vector<std::pair<item, priority>> base;
+    std::map<ref_t<item>, ref_t<priority>> items;
+    std::multimap<ref_t<priority>, ref_t<item>> pq;
 
     for (auto i = 0; i < size; ++i)
-        base.emplace_back(i, next_random());
-    output("vector: ", base);
+        base.emplace_back(next_random(), next_random());
+    output("base: ", base);
 
-    for (auto &e : base)
+    for (auto &e : base) {
         items.emplace(e.first, e.second);
-    output("items: ", items);
-
-    for (auto &e : items) {
-        using item_t = std::remove_const_t<decltype(e.first)>;
-        using item_ref = std::add_lvalue_reference_t<item_t>;
-        pq.emplace(ref_t<decltype(e.second)>(e.second),
-                   ref_t<item_t>(const_cast<item_ref>(e.first)));
+        pq.emplace(e.second, e.first);
     }
+    output("items: ", items);
     output("pq: ", pq);
 
     for (auto limit = next_random() + 1, loop = 0; loop < limit; ++loop) {
-        items.at(base[next_random()].first) += next_random();
-        output(std::to_string(loop) + ": ", pq);
-        output(std::to_string(loop) + ": ", items);
         std::cout << "-------" << std::endl;
+        for (auto &e : base)
+            items.at(e.first) += next_random();
+        output(std::to_string(loop) + "-item: ", items);
+        output(std::to_string(loop) + "-pq: ", pq);
     }
 
     return 0;
