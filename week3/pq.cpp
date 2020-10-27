@@ -166,8 +166,3 @@ template <typename U, typename V> void PQ<U, V>::unit_testing() noexcept {
     }
     output("priority queue afterwards", pq);
 }
-
-int main(int, char const *[]) {
-    PQ<int>::unit_testing();
-    return 0;
-}
