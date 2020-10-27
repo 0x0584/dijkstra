@@ -6,33 +6,34 @@
 #include <stdexcept>
 #include <unordered_map>
 
-using item = std::pair<int, int>;
-
-class PQ {
+template <typename U, typename V = int> class PQ {
     struct cmp {
-        bool operator()(const item &u, const item &v) const;
+        bool operator()(const std::pair<U, V> &u,
+                        const std::pair<U, V> &v) const {
+            return u.second < v.second;
+        }
     };
 
-    std::unordered_map<int, item> items;
-    std::set<std::reference_wrapper<item>, cmp> pq;
+    std::unordered_map<int, std::pair<U, V>> items;
+    std::set<std::reference_wrapper<std::pair<U, V>>, cmp> pq;
 
   public:
     PQ() = default;
 
     void push(int u, int priority = 0);
     void change_priority(int u, int priority);
-    void push(item pair);
-    void change_priority(item pair);
+    void push(std::pair<U, V> pair);
+    void change_priority(std::pair<U, V> pair);
     void pop();
-    item top() const;
-    const item &retrieve(int u) const;
+    std::pair<U, V> top() const;
+    const std::pair<U, V> &retrieve(int u) const;
     bool contains(int u) const noexcept;
     bool empty() const noexcept;
     std::size_t size() const noexcept;
 
   private:
     class iterator {
-        using iterator_type = decltype(pq)::iterator;
+        using iterator_type = typename decltype(pq)::iterator;
         iterator_type itr;
 
         iterator &advance(int incr);
@@ -40,8 +41,8 @@ class PQ {
       public:
         explicit iterator(iterator_type itr);
 
-        item operator*() const noexcept;
-        item operator->() const noexcept;
+        const std::pair<U, V> &operator*() const noexcept;
+        const std::pair<U, V> &operator->() const noexcept;
         bool operator==(const iterator &rhs) const;
         bool operator!=(const iterator &rhs) const;
         iterator &operator+=(const int &incr);
