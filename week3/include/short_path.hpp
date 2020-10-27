@@ -19,7 +19,7 @@ struct path {
 struct dijkstra {
     explicit dijkstra(graph g);
 
-    path path(int s, int t);
+    struct path path(int s, int t);
 };
 
 #endif /* SHORT_PATH_H */

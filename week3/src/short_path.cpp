@@ -11,4 +11,4 @@ void path::add_edge(const edge_t e) {
 
 dijkstra::dijkstra(graph g) {}
 
-path dijkstra::path(int s, int t) {}
+struct path dijkstra::path(int s, int t) {}

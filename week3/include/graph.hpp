@@ -9,6 +9,8 @@
 #include <unordered_map>
 #include <vector>
 
+#define range(cont) std::begin(cont), std::end(cont)
+
 typedef class vertex *vertex_t;
 typedef class edge *edge_t;
 
@@ -26,7 +28,9 @@ class edge {
 };
 
 class vertex {
-    std::unordered_map<vertex_t, edge_t> e;
+    using map = std::unordered_map<vertex_t, edge_t>;
+
+    map e;
     int id, val;
 
   public:
@@ -48,11 +52,13 @@ class vertex {
 };
 
 class graph {
-    std::unordered_map<int, vertex_t> v;
+    using map = std::unordered_map<int, vertex_t>;
+
+    map v;
     int n_vertices;
     double edge_density;
 
-    void vertex_check(bool in, int id, std::string_view msg);
+    void vertex_check(bool in, int id, const std::string &msg);
 
   public:
     graph(int n_vertices, double edge_density);
