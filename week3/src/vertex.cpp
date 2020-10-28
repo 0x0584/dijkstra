@@ -1,60 +1,77 @@
 #include "graph.hpp"
 
-vertex::vertex(int id, int val) : id(id), val(val) {}
-vertex::~vertex() { e.clear(); }
+Vertex::Vertex(Vertex &&other) noexcept
+    : _edges(std::exchange(other._edges, {})), id(other.id), val(other.val) {}
 
-int vertex::identity() const { return id; }
-int vertex::value() const { return val; }
-void vertex::set_value(int value) { val = value; }
+Vertex::Vertex(int id, int val) : id(id), val(val) {}
+Vertex::~Vertex() { _edges.clear(); }
 
-std::vector<edge_t> vertex::edges() const {
+Vertex &Vertex::operator=(const Vertex &other) {
+    if (this != &other)
+        return *this;
+    return *this;
+}
+
+Vertex &Vertex::operator=(Vertex &&other) noexcept {
+    if (this == &other)
+        return *this;
+    return *this;
+}
+
+int Vertex::identity() const { return id; }
+int Vertex::value() const { return val; }
+void Vertex::value(int value) { val = value; }
+
+std::vector<edge_t> Vertex::edges() const {
     std::vector<edge_t> vec;
-    vec.reserve(e.size());
-    std::transform(std::begin(e), std::end(e), std::back_inserter(vec),
-                   [](const map::value_type &pair) { return pair.second; });
+    vec.reserve(_edges.size());
+    std::transform(range(_edges),
+                   std::back_inserter(vec),
+                   [](const auto &pair) { return pair.second; });
     return vec;
 }
 
-std::vector<vertex_t> vertex::neighbors() const {
+std::vector<vertex_t> Vertex::neighbors() const {
     std::vector<vertex_t> vec;
-    vec.reserve(e.size());
-    std::transform(std::begin(e), std::end(e), std::back_inserter(vec),
-                   [](const map::value_type &pair) { return pair.first; });
+    vec.reserve(_edges.size());
+    std::transform(std::begin(_edges), std::end(_edges),
+                   std::back_inserter(vec),
+                   [](const auto &pair) { return pair.first; });
     return vec;
 }
 
-edge_t vertex::edge_to(vertex_t v) {
+edge_t Vertex::edge(vertex_t v) const {
     if (not v)
         throw std::runtime_error("Vertex was null");
-    if (e.find(v) == std::end(e))
+    if (_edges.find(v) == std::end(_edges))
         return nullptr;
-    return e.at(v);
+    return _edges.at(v);
 }
 
-bool vertex::adjacent(vertex_t v) const {
+bool Vertex::adjacent(vertex_t v) const {
     if (not v)
         throw std::runtime_error("Vertex was null");
-    return e.find(v) != std::end(e);
+    return _edges.find(v) != std::end(_edges);
 }
 
-void vertex::add_directed_edge(vertex_t v, int w) {
+void Vertex::add_directed_edge(vertex_t v, int w) {
     if (not adjacent(v))
-        e[v] = new edge{this, v, w};
+        _edges[v] = new Edge{this, v, w};
 }
 
-void vertex::add_edge(vertex_t v, int w) { add_edge(v, w, w); }
-void vertex::add_edge(vertex_t v, int w, int re_w) {
+void Vertex::add_edge(vertex_t v, int w) { add_edge(v, w, w); }
+void Vertex::add_edge(vertex_t v, int w, int re_w) {
     add_directed_edge(v, w);
     v->add_directed_edge(this, re_w);
 }
 
-void vertex::remove_directed_edge(vertex_t v) {
+void Vertex::remove_directed_edge(vertex_t v) {
     if (not v)
         throw std::runtime_error("Vertex was null");
-    e.erase(v);
+    _edges.erase(v);
 }
 
-void vertex::remove_edge(vertex_t v) {
+void Vertex::remove_edge(vertex_t v) {
     remove_directed_edge(v);
     v->remove_directed_edge(this);
 }

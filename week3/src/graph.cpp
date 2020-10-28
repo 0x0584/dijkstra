@@ -1,125 +1,127 @@
 #include "graph.hpp"
 
-graph::graph() {}
-graph::~graph() { v.clear(); }
+Graph::Graph(Graph &&g) noexcept : _vertices(std::exchange(g._vertices, {})) {}
 
-std::vector<class vertex> graph::vertices() const {
-    std::vector<vertex> vertices;
-    std::transform(range(v), std::back_inserter(vertices),
-                   [](map::value_type pair) { return *pair.second; });
+Graph::Graph() {}
+Graph::~Graph() { _vertices.clear(); }
+
+std::vector<Vertex> Graph::vertices() const {
+    std::vector<Vertex> vertices;
+    std::transform(range(_vertices), std::back_inserter(vertices),
+                   [](const auto &pair) { return *pair.second; });
     vertices.shrink_to_fit();
     return vertices;
 }
 
-std::vector<class edge> graph::edges() const {
-    std::vector<edge> edges;
-    std::for_each(range(v), [&edges](map::value_type pair) {
+std::vector<Edge> Graph::edges() const {
+    std::vector<Edge> edges;
+    std::for_each(range(_vertices), [&edges](const auto &pair) {
         std::vector<edge_t> v_edges = pair.second->edges();
         return std::transform(range(v_edges), std::back_inserter(edges),
-                              [](edge_t e) { return *e; });
+                              [](const auto &edge) { return *edge; });
     });
     edges.shrink_to_fit();
     return edges;
 }
 
-vertex graph::get_vertex(int u) {
+Vertex Graph::vertex(int u) const {
     vertex_check(true, u, "vertex " + std::to_string(u) + " is not found");
-    return *v[u];
+    return *_vertices.at(u);
 }
 
-std::vector<vertex> graph::neighbors(int u) {
+std::vector<Vertex> Graph::neighbors(int u) const {
     vertex_check(true, u, "vertex " + std::to_string(u) + " is not found");
-    std::vector<vertex_t> neis = v[u]->neighbors();
-    std::vector<vertex> vec;
+    std::vector<vertex_t> neis = _vertices.at(u)->neighbors();
+    std::vector<Vertex> vec;
     vec.reserve(neis.size());
     std::transform(range(neis), std::back_inserter(vec),
-                   [](vertex_t v) { return *v; });
+                   [](const auto &vertex) { return *vertex; });
     return vec;
 }
 
-std::vector<edge> graph::edges(int u) {
+std::vector<Edge> Graph::edges(int u) const {
     vertex_check(true, u, "vertex " + std::to_string(u) + " is not found");
-    std::vector<edge_t> es = v[u]->edges();
-    std::vector<edge> vec;
+    std::vector<edge_t> es = _vertices.at(u)->edges();
+    std::vector<Edge> vec;
     vec.reserve(es.size());
     std::transform(range(es), std::back_inserter(vec),
-                   [](edge_t e) { return *e; });
+                   [](const auto &edge) { return *edge; });
     return vec;
 }
 
-void graph::add_vertex(int u, int value) {
+void Graph::add_vertex(int u, int value) {
     vertex_check(false, u, "vertex " + std::to_string(u) + " already exists");
-    v[u] = new vertex{u, value};
+    _vertices.emplace(u, new Vertex{u, value});
 }
 
-void graph::set_vertex_value(int u, int value) {
+void Graph::value(int u, int value) const {
     vertex_check(true, u, "vertex " + std::to_string(u) + " is not found");
-    v[u]->set_value(value);
+    _vertices.at(u)->value(value);
 }
 
-int graph::vertex_value(int u) {
+int Graph::value(int u) const {
     vertex_check(true, u, "vertex " + std::to_string(u) + " is not found");
-    return v[u]->value();
+    return _vertices.at(u)->value();
 }
 
-void graph::remove_vertex(int u) { v.erase(u); }
+void Graph::remove_vertex(int u) { _vertices.erase(u); }
 
-bool graph::adjacent(int s, int t) {
+bool Graph::adjacent(int s, int t) const {
     vertex_check(true, s, "vertex " + std::to_string(s) + " is not found");
     vertex_check(true, t, "vertex " + std::to_string(t) + " is not found");
-    return v[s]->adjacent(v[t]);
+    return _vertices.at(s)->adjacent(_vertices.at(t));
 }
 
-edge graph::get_edge(int s, int t) {
+Edge Graph::edge(int s, int t) const {
     vertex_check(true, s, "vertex " + std::to_string(s) + " is not found");
     vertex_check(true, t, "vertex " + std::to_string(t) + " is not found");
-    edge_t e = v[s]->edge_to(v[t]);
+    edge_t e = _vertices.at(s)->edge(_vertices.at(t));
     if (not e)
         throw std::runtime_error("no edge between " + std::to_string(s) +
                                  " and " + std::to_string(t));
     return *e;
 }
 
-void graph::add_directed_edge(int s, int t, int w) {
+void Graph::add_directed_edge(int s, int t, int w) const {
     vertex_check(true, s, "vertex " + std::to_string(s) + " is not found");
     vertex_check(true, t, "vertex " + std::to_string(t) + " is not found");
-    v[s]->add_edge(v[t], w);
+    _vertices.at(s)->add_edge(_vertices.at(t), w);
 }
 
-void graph::add_edge(int s, int t, int w) { add_edge(s, t, w, w); }
+void Graph::add_edge(int s, int t, int w) const { add_edge(s, t, w, w); }
 
-void graph::add_edge(int s, int t, int w, int re_w) {
+void Graph::add_edge(int s, int t, int w, int re_w) const {
     add_directed_edge(s, t, w);
     add_directed_edge(t, s, re_w);
 }
 
-void graph::remove_edge(int s, int t) {
+void Graph::remove_edge(int s, int t) const {
     vertex_check(true, s, "vertex " + std::to_string(s) + " is not found");
     vertex_check(true, t, "vertex " + std::to_string(t) + " is not found");
-    v[s]->remove_edge(v[t]);
+    _vertices.at(s)->remove_edge(_vertices.at(t));
 }
 
-int graph::edge_weight(int s, int t) {
+int Graph::weight(int s, int t) const {
     vertex_check(true, s, "vertex " + std::to_string(s) + " is not found");
     vertex_check(true, t, "vertex " + std::to_string(t) + " is not found");
-    return v[s]->edge_to(v[t])->weight();
+    return _vertices.at(s)->edge(_vertices.at(t))->weight();
 }
 
-void graph::set_edge_weight(int s, int t, int w) {
+void Graph::weight(int s, int t, int w) const {
     vertex_check(true, s, "vertex " + std::to_string(s) + " is not found");
     vertex_check(true, t, "vertex " + std::to_string(t) + " is not found");
-    v[s]->edge_to(v[t])->set_weight(w);
+    _vertices.at(s)->edge(_vertices.at(t))->weight(w);
 }
 
 /////////////////////////////////////////////////////////////////////////////
 
-void graph::vertex_check(bool in, int id, const std::string &msg) {
-    auto itr = v.find(id);
+void Graph::vertex_check(bool in, int id, const std::string &msg) const {
+    auto itr = _vertices.find(id);
     if (in) {
-        if (itr == std::end(v))
+        if (itr == std::end(_vertices))
             throw std::runtime_error(msg);
     } else {
-        if (itr != std::end(v))
+        if (itr != std::end(_vertices))
             throw std::runtime_error(msg);
     }
 }
