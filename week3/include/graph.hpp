@@ -36,11 +36,13 @@ template <typename T = int, typename W = int> class Graph {
 
     using vertex_ptr = std::shared_ptr<class Vertex>;
     using vertex_wptr = std::weak_ptr<class Vertex>;
+    using vertex_constref = const vertex_ptr &;
 
     using edge_ptr = std::shared_ptr<class Edge>;
+    using edge_constref = const edge_ptr &;
 
     class Vertex : std::enable_shared_from_this<Vertex> {
-        std::unordered_map<vertex_ptr, edge_ptr> _edges;
+        std::unordered_map<vertex_wptr, edge_ptr> _edges;
         vertex_id _id;
         vertex_value_t _val;
 
@@ -60,11 +62,11 @@ template <typename T = int, typename W = int> class Graph {
         auto edges() const;
         auto neighbors() const;
 
-        auto edge(vertex_ptr v) const;
-        bool adjacent(vertex_ptr v) const;
+        auto edge(vertex_constref v) const;
+        bool adjacent(vertex_constref v) const;
 
-        void add_directed_edge(vertex_ptr v, edge_weight_t wei);
-        void remove_directed_edge(vertex_ptr v);
+        void add_directed_edge(vertex_constref v, edge_weight_t wei);
+        void remove_directed_edge(vertex_constref v);
         void add_edge(vertex_ptr v, edge_weight_t wei);
         void add_edge(vertex_ptr v, edge_weight_t wei, edge_weight_t re_wei);
         void remove_edge(vertex_ptr v);
@@ -83,7 +85,7 @@ template <typename T = int, typename W = int> class Graph {
         Edge(const Edge &) = delete;
 
         Edge(Edge &&other) noexcept;
-        Edge(vertex_ptr from, vertex_ptr to, edge_weight_t wei);
+        Edge(vertex_constref from, vertex_constref to, edge_weight_t wei);
 
         auto &operator=(Edge &&other) noexcept;
 
@@ -91,16 +93,18 @@ template <typename T = int, typename W = int> class Graph {
         auto to() const;
         auto weight() const;
         void weight(edge_weight_t wei);
-        bool residual(edge_ptr other) const;
 
-        static edge_ptr make_shared(vertex_ptr from, vertex_ptr to,
+        // FIXME: implement residual edge
+        // bool residual(const edge_ptr & other) const;
+
+        static edge_ptr make_shared(vertex_constref from, vertex_constref to,
                                     edge_weight_t wei) {
             return std::make_shared(from, to, wei);
         }
     };
 
-    vertex_t get_vertex(vertex_ptr v) const;
-    edge_t get_edge(edge_ptr e) const;
+    vertex_t get_vertex(vertex_constref v) const;
+    edge_t get_edge(edge_constref e) const;
 
   public:
     Graph() = default;

@@ -6,7 +6,8 @@ Graph<T, U>::Edge::Edge(Edge &&other) noexcept
       _sink(std::exchange(other.t, nullptr)), _wei(other.w) {}
 
 template <typename T, typename U>
-Graph<T, U>::Edge::Edge(vertex_ptr from, vertex_ptr to, edge_weight_t weight)
+Graph<T, U>::Edge::Edge(vertex_constref from, vertex_constref to,
+                        edge_weight_t weight)
     : _source(from), _sink(to), _wei(weight) {
     if (not from or not to)
         throw std::runtime_error("Vertex was null");
@@ -36,7 +37,7 @@ void Graph<T, U>::Edge::weight(edge_weight_t wei) {
     _wei = wei;
 }
 
-template <typename T, typename U>
-bool Graph<T, U>::Edge::residual(edge_ptr other) const {
-    return other->from() == to() and from() == other->to();
-}
+// template <typename T, typename U>
+// bool Graph<T, U>::Edge::residual(edge_ptr other) const {
+//     return other->from() == to() and from() == other->to();
+// }

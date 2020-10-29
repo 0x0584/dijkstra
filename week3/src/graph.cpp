@@ -133,12 +133,13 @@ void Graph<T, U>::remove_edge(vertex_id from, vertex_id to) const {
 /////////////////////////////////////////////////////////////////////////////
 
 template <typename T, typename U>
-typename Graph<T, U>::vertex_t Graph<T, U>::get_vertex(vertex_ptr v) const {
+typename Graph<T, U>::vertex_t
+Graph<T, U>::get_vertex(vertex_constref v) const {
     return std::make_pair(v->identity(), v->value());
 }
 
 template <typename T, typename U>
-typename Graph<T, U>::edge_t Graph<T, U>::get_edge(edge_ptr e) const {
+typename Graph<T, U>::edge_t Graph<T, U>::get_edge(edge_constref e) const {
     return std::make_tuple(e->from(), e->to(), e->weight());
 }
 

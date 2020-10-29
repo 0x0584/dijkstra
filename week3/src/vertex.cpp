@@ -42,7 +42,7 @@ template <typename T, typename W> auto Graph<T, W>::Vertex::neighbors() const {
 }
 
 template <typename T, typename W>
-auto Graph<T, W>::Vertex::edge(vertex_ptr v) const {
+auto Graph<T, W>::Vertex::edge(vertex_constref v) const {
     if (not v)
         throw std::runtime_error("Vertex was null");
     if (_edges.find(v) == std::end(_edges))
@@ -51,14 +51,15 @@ auto Graph<T, W>::Vertex::edge(vertex_ptr v) const {
 }
 
 template <typename T, typename W>
-bool Graph<T, W>::Vertex::adjacent(vertex_ptr v) const {
+bool Graph<T, W>::Vertex::adjacent(vertex_constref v) const {
     if (not v)
         throw std::runtime_error("Vertex was null");
     return _edges.find(v) != std::end(_edges);
 }
 
 template <typename T, typename W>
-void Graph<T, W>::Vertex::add_directed_edge(vertex_ptr v, edge_weight_t wei) {
+void Graph<T, W>::Vertex::add_directed_edge(vertex_constref v,
+                                            edge_weight_t wei) {
     if (not adjacent(v))
         _edges.emplace(v, Edge::make_shared(this->shared_from_this(), v, wei));
 }
@@ -76,7 +77,7 @@ void Graph<T, W>::Vertex::add_edge(vertex_ptr v, edge_weight_t wei,
 }
 
 template <typename T, typename W>
-void Graph<T, W>::Vertex::remove_directed_edge(vertex_ptr v) {
+void Graph<T, W>::Vertex::remove_directed_edge(vertex_constref v) {
     if (not v)
         throw std::runtime_error("Vertex was null");
     _edges.erase(v);
