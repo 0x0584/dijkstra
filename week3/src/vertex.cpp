@@ -1,38 +1,39 @@
 #include "graph.hpp"
 
-Vertex::Vertex(Vertex &&other) noexcept
-    : _edges(std::exchange(other._edges, {})), id(other.id), val(other.val) {}
+template <typename T, typename W>
+Graph<T, W>::Vertex::Vertex(Graph<T, W>::Vertex &&other) noexcept
+    : _edges(std::exchange(other._edges, {})), _id(other.id), _val(other.val) {}
 
-Vertex::Vertex(int id, int val) : id(id), val(val) {}
-Vertex::~Vertex() { _edges.clear(); }
-
-Vertex &Vertex::operator=(const Vertex &other) {
-    if (this != &other)
-        return *this;
-    return *this;
-}
-
-Vertex &Vertex::operator=(Vertex &&other) noexcept {
+template <typename T, typename W>
+auto &Graph<T, W>::Vertex::operator=(Vertex &&other) noexcept {
     if (this == &other)
         return *this;
     return *this;
 }
 
-int Vertex::identity() const { return id; }
-int Vertex::value() const { return val; }
-void Vertex::value(int value) { val = value; }
+template <typename T, typename W> auto Graph<T, W>::Vertex::identity() const {
+    return _id;
+}
 
-std::vector<edge_t> Vertex::edges() const {
-    std::vector<edge_t> vec;
+template <typename T, typename W> auto Graph<T, W>::Vertex::value() const {
+    return _val;
+}
+
+template <typename T, typename W>
+void Graph<T, W>::Vertex::value(vertex_value_t val) {
+    _val = val;
+}
+
+template <typename T, typename W> auto Graph<T, W>::Vertex::edges() const {
+    std::vector<edge_ptr> vec;
     vec.reserve(_edges.size());
-    std::transform(range(_edges),
-                   std::back_inserter(vec),
+    std::transform(range(_edges), std::back_inserter(vec),
                    [](const auto &pair) { return pair.second; });
     return vec;
 }
 
-std::vector<vertex_t> Vertex::neighbors() const {
-    std::vector<vertex_t> vec;
+template <typename T, typename W> auto Graph<T, W>::Vertex::neighbors() const {
+    std::vector<vertex_ptr> vec;
     vec.reserve(_edges.size());
     std::transform(std::begin(_edges), std::end(_edges),
                    std::back_inserter(vec),
@@ -40,7 +41,8 @@ std::vector<vertex_t> Vertex::neighbors() const {
     return vec;
 }
 
-edge_t Vertex::edge(vertex_t v) const {
+template <typename T, typename W>
+auto Graph<T, W>::Vertex::edge(vertex_ptr v) const {
     if (not v)
         throw std::runtime_error("Vertex was null");
     if (_edges.find(v) == std::end(_edges))
@@ -48,30 +50,40 @@ edge_t Vertex::edge(vertex_t v) const {
     return _edges.at(v);
 }
 
-bool Vertex::adjacent(vertex_t v) const {
+template <typename T, typename W>
+bool Graph<T, W>::Vertex::adjacent(vertex_ptr v) const {
     if (not v)
         throw std::runtime_error("Vertex was null");
     return _edges.find(v) != std::end(_edges);
 }
 
-void Vertex::add_directed_edge(vertex_t v, int w) {
+template <typename T, typename W>
+void Graph<T, W>::Vertex::add_directed_edge(vertex_ptr v, edge_weight_t wei) {
     if (not adjacent(v))
-        _edges[v] = new Edge{this, v, w};
+        _edges.emplace(v, Edge::make_shared(this->shared_from_this(), v, wei));
 }
 
-void Vertex::add_edge(vertex_t v, int w) { add_edge(v, w, w); }
-void Vertex::add_edge(vertex_t v, int w, int re_w) {
-    add_directed_edge(v, w);
-    v->add_directed_edge(this, re_w);
+template <typename T, typename W>
+void Graph<T, W>::Vertex::add_edge(vertex_ptr v, edge_weight_t wei) {
+    add_edge(v, wei, wei);
 }
 
-void Vertex::remove_directed_edge(vertex_t v) {
+template <typename T, typename W>
+void Graph<T, W>::Vertex::add_edge(vertex_ptr v, edge_weight_t wei,
+                                   edge_weight_t re_wei) {
+    add_directed_edge(v, wei);
+    v->add_directed_edge(this->shared_from_this(), re_wei);
+}
+
+template <typename T, typename W>
+void Graph<T, W>::Vertex::remove_directed_edge(vertex_ptr v) {
     if (not v)
         throw std::runtime_error("Vertex was null");
     _edges.erase(v);
 }
 
-void Vertex::remove_edge(vertex_t v) {
+template <typename T, typename W>
+void Graph<T, W>::Vertex::remove_edge(vertex_ptr v) {
     remove_directed_edge(v);
-    v->remove_directed_edge(this);
+    v->remove_directed_edge(this->shared_from_this());
 }

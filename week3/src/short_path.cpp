@@ -1,3 +1,4 @@
 #include "short_path.hpp"
 
-dijkstra::dijkstra(const Graph &g) {}
+template <typename T, typename U>
+dijkstra<T, U>::dijkstra(const Graph<T, U> &g) {}
