@@ -1,0 +1,44 @@
+language: cpp
+
+jobs:
+  include:
+    - os: osx
+      compiler: gcc
+      osx_image: xcode10
+      env:
+        - GCC_VER="9"
+        - MATRIX_EVAL="CC=gcc-${GCC_VER} && CXX=g++-${GCC_VER}"
+
+    - os: osx
+      compiler: clang
+      osx_image: xcode11.2
+      env:
+        - MATRIX_EVAL="CC=clang && CXX=clang++"
+
+    - os: linux
+      dist: bionic
+      compiler: gcc
+      env:
+        - GCC_VER="9"
+        - MATRIX_EVAL="CC=gcc-${GCC_VER} && CXX=g++-${GCC_VER}"
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+          packages:
+            - gcc-9
+            - g++-9
+
+    - os: linux
+      dist: bionic
+      compiler: clang
+      env:
+        - MATRIX_EVAL="CC=clang && CXX=clang++"
+
+before_script:
+  - echo -e "Host github.com\n\tHostName github.com\n\tUser git\n\tIdentityFile ~/.ssh/id_rsa\n" >> ~/.ssh/config
+  - eval "${MATRIX_EVAL}"
+
+script:
+  - make -C week3
+  - make -C week4
