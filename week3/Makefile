@@ -4,8 +4,8 @@ SRCDIR   = src
 HEADIR   = include
 OBJDIR   = .obj
 
-CXX      = g++
-CPPFLAGS = -Wall -Wextra -Wpedantic -I$(HEADIR) -std=c++14
+CXX      = clang++
+CPPFLAGS = -Wall -Wextra -Wpedantic -I$(HEADIR) -std=c++1z
 
 SRCS     := $(shell find $(SRCDIR) -name '*.cpp' -type f)
 HEADS    := $(shell find $(HEADIR) -name '*.hpp' -type f)
