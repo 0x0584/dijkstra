@@ -3,11 +3,8 @@
 
 #include "graph.hpp"
 
-using namespace graph;
-
-template <typename T, typename U>
 struct dijkstra {
-    explicit dijkstra(const Graph<T, U> &g);
+    explicit dijkstra(const Graph &g);
 };
 
 #endif /* SHORT_PATH_H */

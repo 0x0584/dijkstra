@@ -1,9 +1,7 @@
 #include "graph.hpp"
 
-using namespace graph;
-
 int main(int, char const *[]) {
-    Graph<int, int> g;
+    Graph g;
 
     for (const auto &v : g.vertices()) {
         std::cout << "(" << v.first << ") " << v.second << "\n";

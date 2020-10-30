@@ -19,7 +19,6 @@
 
 // TODO: reimplement public API
 
-namespace graph {
 using T = int;
 using W = T;
 class Graph {
@@ -125,115 +124,239 @@ class Graph {
         }
 
         std::vector<edge_ref> edges() const {
-            std::vector<edge_ref> vec;
             const auto resolve = [](const edge_map::value_type &pair) {
                 return std::reference_wrapper(*pair.second);
             };
+            std::vector<edge_ref> vec;
             vec.reserve(_edges.size());
             std::transform(itr_range(_edges), std::back_inserter(vec), resolve);
             return vec;
         }
 
         std::vector<vertex_ref> neighbors() const {
-            std::vector<vertex_ref> vec;
             const auto resolve = [](const edge_map::value_type &pair) {
                 return std::reference_wrapper(*pair.second->to());
             };
+            std::vector<vertex_ref> vec;
             vec.reserve(_edges.size());
             std::transform(itr_range(_edges), std::back_inserter(vec), resolve);
             return vec;
         }
     };
 
-    vertex_t get_vertex(vertex_pref v) const;
-    edge_t get_edge(const edge_ptr &e) const;
-    std::pair<vertex_id, vertex_id> generate_edge(std::size_t limit);
+    using vertex_map = std::unordered_map<vertex_id, vertex_ptr>;
+
+    std::pair<vertex_id, vertex_id> generate_edge(std::size_t limit) {
+        auto generate_vertex = [&limit, this](vertex_id old = -1) {
+            static std::random_device gen;
+            static std::uniform_int_distribution<std::size_t> u(0, limit);
+            vertex_id vertex;
+            do {
+                vertex = u(gen);
+            } while (vertex != old and
+                     _vertices.find(vertex) != std::end(_vertices));
+            return vertex;
+        };
+        vertex_id u = generate_vertex(), v = generate_vertex(u);
+        return std::make_pair(u, v);
+    }
+
+    vertex_t make_vertex(vertex_ref v) const {
+        return std::make_pair(v.get().identity(), v.get().value());
+    }
+
+    vertex_t make_vertex(vertex_pref v) const {
+        return std::make_pair(v->identity(), v->value());
+    }
+
+    edge_t make_edge(edge_ref e) const {
+        const auto &_edge = e.get();
+        return std::make_tuple(_edge.from()->identity(), _edge.to()->identity(),
+                               _edge.weight());
+    }
+
+    edge_t make_edge(edge_pref e) const {
+        return std::make_tuple(e->from()->identity(), e->to()->identity(),
+                               e->weight());
+    }
 
   public:
     Graph() = default;
     Graph(const Graph &) = delete;
 
-    Graph(Graph &&other) noexcept;
-    Graph(std::size_t n_vertices, double edge_density);
+    Graph(Graph &&other) noexcept
+        : _vertices(std::exchange(other._vertices, {})) {}
+
+    Graph(std::size_t n_vertices, double edge_density) {
+        if (edge_density > 1)
+            throw std::runtime_error("edge_density > 1");
+        const std::size_t n_edges = (n_vertices * (n_vertices - 1)) / 2;
+        for (std::size_t i = 0; i < n_vertices; ++i)
+            add_vertex(i, 1);
+        for (std::size_t i = 0; i < n_edges; ++i) {
+            std::pair<vertex_id, vertex_id> _edge = generate_edge(n_vertices);
+            add_edge(_edge.first, _edge.second, 1);
+        }
+    }
+
+#define make_edge(e) std::get<0>(e), std::get<1>(e), std::get<2>(e)
     Graph(const std::vector<vertex_t> &vertices,
-          const std::vector<edge_t> &edges, bool directed = true);
+          const std::vector<edge_t> &edges, bool directed = true) {
+        for (const auto &v : vertices)
+            add_vertex(v.first, v.second);
+        for (const auto &e : edges) {
+            if (directed)
+                add_directed_edge(make_edge(e));
+            else
+                add_edge(make_edge(e));
+        }
+    }
+#undef make_edge
 
     Graph &operator=(const Graph &other) = delete;
-    Graph &operator=(Graph &&other) noexcept;
+    Graph &operator=(Graph &&other) noexcept {
+        if (this == &other)
+            return *this;
+        _vertices.clear();
+        _vertices = std::exchange(other._vertices, {});
+        return *this;
+    }
 
-    std::vector<vertex_t> vertices() const;
-    std::vector<edge_t> edges() const;
+    std::vector<vertex_t> vertices() const {
+        std::vector<vertex_t> nodes;
+        const auto resolve = [this](const auto &pair) {
+            return make_vertex(pair.second);
+        };
+        nodes.reserve(_vertices.size());
+        std::transform(itr_range(_vertices), std::back_inserter(nodes),
+                       resolve);
+        return nodes;
+    }
 
-    vertex_t vertex(vertex_id u) const;
-    const vertex_value_t &value(vertex_id u) const;
-    void value(vertex_id u, const vertex_value_t &val) const;
-    std::vector<edge_t> edges(vertex_id u) const;
-    std::vector<vertex_t> neighbors(vertex_id u) const;
-    void add_vertex(vertex_id u, const vertex_value_t &val);
-    void remove_vertex(vertex_id u);
+    std::vector<edge_t> edges() const {
+        std::vector<edge_t> links;
+        const auto resolve = [&links, this](const auto &pair) {
+            const auto &v_edges = pair.second->edges();
+            return std::transform(itr_range(v_edges), std::back_inserter(links),
+                                  [this](edge_ref e) { return make_edge(e); });
+        };
+        std::for_each(itr_range(_vertices), resolve);
+        links.shrink_to_fit();
+        return links;
+    }
 
-    bool adjacent(vertex_id from, vertex_id to) const;
+    vertex_t vertex(vertex_id u) const {
+        vertex_check(true, u, "vertex ", u, " is not found");
+        return make_vertex(_vertices.at(u));
+    }
 
-    edge_t edge(vertex_id from, vertex_id to) const;
-    const edge_weight_t &weight(vertex_id from, vertex_id to) const;
-    void weight(vertex_id from, vertex_id to, const edge_weight_t &wei) const;
+    const vertex_value_t &value(vertex_id u) const {
+        vertex_check(true, u, "vertex ", u, " is not found");
+        return _vertices.at(u)->value();
+    }
+
+    void value(vertex_id u, const vertex_value_t &val) const {
+        vertex_check(true, u, "vertex ", u, " is not found");
+        _vertices.at(u)->value(val);
+    }
+
+    std::vector<edge_t> edges(vertex_id u) const {
+        std::vector<edge_t> links;
+        auto v_edges = _vertices.at(u)->edges();
+        links.reserve(v_edges.size());
+        std::transform(itr_range(v_edges), std::back_inserter(links),
+                       [this](edge_ref edge) { return make_edge(edge); });
+        return links;
+    }
+
+    std::vector<vertex_t> neighbors(vertex_id u) const {
+        vertex_check(true, u, "vertex ", u, " is not found");
+        std::vector<vertex_t> nodes;
+        auto neis = _vertices.at(u)->neighbors();
+        nodes.reserve(neis.size());
+        std::transform(
+            itr_range(neis), std::back_inserter(nodes),
+            [this](vertex_ref vertex) { return make_vertex(vertex); });
+        return nodes;
+    }
+
+    void add_vertex(vertex_id u, const vertex_value_t &val) {
+        vertex_check(false, u, "vertex ", u, " already exists");
+        _vertices.emplace(u, std::make_shared<Vertex>(u, val));
+    }
+
+    void remove_vertex(vertex_id u) { _vertices.erase(u); }
+
+    bool adjacent(vertex_id from, vertex_id to) const {
+        vertex_check(true, from, "vertex ", from, " is not found");
+        vertex_check(true, to, "vertex ", to, " is not found");
+        return _vertices.at(from)->adjacent(_vertices.at(to));
+    }
+
+    edge_t edge(vertex_id from, vertex_id to) const {
+        vertex_check(true, from, "vertex ", from, " is not found");
+        vertex_check(true, to, "vertex ", to, " is not found");
+        if (not adjacent(from, to))
+            throw std::runtime_error("no edge between " + std::to_string(from) +
+                                     " and " + std::to_string(to));
+        return make_edge(_vertices.at(from)->edge(_vertices.at(to)));
+    }
+
+    const edge_weight_t &weight(vertex_id from, vertex_id to) const {
+        vertex_check(true, from, "vertex ", from, " is not found");
+        vertex_check(true, to, "vertex ", to, " is not found");
+        return _vertices.at(from)->edge(_vertices.at(to))->weight();
+    }
+
+    void weight(vertex_id from, vertex_id to, const edge_weight_t &wei) const {
+        vertex_check(true, from, "vertex ", from, " is not found");
+        vertex_check(true, to, "vertex ", to, " is not found");
+        _vertices.at(from)->edge(_vertices.at(to))->weight(wei);
+    }
 
     void add_directed_edge(vertex_id from, vertex_id to,
-                           const edge_weight_t &wei) const;
-    void add_edge(vertex_id from, vertex_id to, const edge_weight_t &wei) const;
-    void add_edge(vertex_id from, vertex_id to, const edge_weight_t &wei,
-                  const edge_weight_t &re_wei) const;
+                           const edge_weight_t &wei) const {
+        vertex_check(true, from, "vertex ", from, " is not found");
+        vertex_check(true, to, "vertex ", to, " is not found");
+        _vertices.at(from)->add_edge(_vertices.at(to), wei);
+    }
 
-    void remove_edge(vertex_id from, vertex_id to) const;
+    void add_edge(vertex_id from, vertex_id to,
+                  const edge_weight_t &wei) const {
+        add_edge(from, to, wei, wei);
+    }
+
+    void add_edge(vertex_id from, vertex_id to, const edge_weight_t &wei,
+                  const edge_weight_t &re_wei) const {
+        add_directed_edge(from, to, wei);
+        add_directed_edge(to, from, re_wei);
+    }
+
+    void remove_edge(vertex_id from, vertex_id to) const {
+        vertex_check(true, from, "vertex ", from, " is not found");
+        vertex_check(true, to, "vertex ", to, " is not found");
+        _vertices.at(from)->remove_edge(_vertices.at(to));
+    }
+
     void remove_directed_edge(vertex_id from, vertex_id to) const;
 
   private:
-    std::unordered_map<vertex_id, vertex_ptr> _vertices;
+    vertex_map _vertices;
 
     template <typename... Args>
-    void vertex_check(bool in, vertex_id id, const Args &... msg) const;
+    void vertex_check(bool in, vertex_id id, const Args &... msg) const {
+        using List = int[];
+        std::ostringstream stream;
+        (void)List{0, ((void)(stream << msg), 0)...};
+
+        auto itr = _vertices.find(id);
+        if (in) {
+            if (itr == std::end(_vertices))
+                throw std::runtime_error(stream.str());
+        } else {
+            if (itr != std::end(_vertices))
+                throw std::runtime_error(stream.str());
+        }
+    }
 };
-
-// namespace impl {
-// template <typename T, typename W>
-// using Vertex = typename Graph<T, W>::Vertex;
-
-// template <typename T, typename W>
-// using Edge = typename Graph<T, W>::Edge;
-
-// template <typename T, typename W>
-// using vertex_id = typename Graph<T, W>::vertex_id;
-
-// template <typename T, typename W = void>
-// using vertex_value_t = typename Graph<T, W>::vertex_value_t;
-
-// template <typename T, typename W>
-// using vertex_t = typename Graph<T, W>::vertex_t;
-
-// template <typename T, typename W>
-// using edge_weight_t = typename Graph<T, W>::edge_weight_t;
-
-// template <typename T, typename W>
-// using edge_t = typename Graph<T, W>::edge_t;
-
-// template <typename T, typename W>
-// using vertex_ptr = typename Graph<T, W>::vertex_ptr;
-
-// template <typename T, typename W>
-// using vertex_wptr = typename Graph<T, W>::vertex_wptr;
-
-// template <typename T, typename W>
-// using vertex_constref = const vertex_ptr<T, W> &;
-
-// template <typename T, typename W>
-// using edge_ptr = typename Graph<T, W>::edge_ptr;
-
-// template <typename T, typename W>
-// using edge_wptr = typename Graph<T, W>::edge_wptr;
-
-// template <typename T, typename W>
-// using edge_constref = const edge_ptr<T, W> &;
-// }
-// namespace impl
-} // namespace graph
 #endif /* GRAPH_H */
