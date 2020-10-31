@@ -3,8 +3,9 @@
 
 #include "graph.hpp"
 
+template <typename T, typename W>
 struct dijkstra {
-    explicit dijkstra(const Graph &g);
+    explicit dijkstra(const Graph<T, W> &g);
 };
 
 #endif /* SHORT_PATH_H */

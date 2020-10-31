@@ -17,10 +17,12 @@
 // XXX: use smart pointers instead of raw pointers
 // XXX: use templates everywhere
 
-// TODO: reimplement public API
+// XXX: reimplement public API
 
+// template <typename T = int, typename W = T>
 using T = int;
 using W = T;
+
 class Graph {
   public:
     using vertex_id = std::size_t;
@@ -72,7 +74,7 @@ class Graph {
         }
     };
 
-    class Vertex : std::enable_shared_from_this<Vertex> {
+    class Vertex : public std::enable_shared_from_this<Vertex> {
         using edge_map = std::unordered_map<vertex_id, edge_ptr>;
 
         edge_map _edges;
@@ -102,8 +104,8 @@ class Graph {
         void add_directed_edge(vertex_pref v, const edge_weight_t &wei) {
             if (adjacent(v))
                 return;
-            auto _edge = std::make_unique<Edge>(shared_from_this(), v, wei);
-            _edges.emplace(v->_id, std::move(_edge));
+            vertex_wptr ptr = weak_from_this();
+            _edges.emplace(v->_id, std::make_unique<Edge>(ptr.lock(), v, wei));
         }
 
         void add_edge(vertex_pref v, const edge_weight_t &wei) {
@@ -113,18 +115,18 @@ class Graph {
         void add_edge(vertex_pref v, const edge_weight_t &wei,
                       const edge_weight_t &re_wei) {
             add_directed_edge(v, wei);
-            v->add_directed_edge(shared_from_this(), re_wei);
+            v->add_directed_edge(this->shared_from_this(), re_wei);
         }
 
         void remove_directed_edge(vertex_pref v) { _edges.erase(v->_id); }
 
         void remove_edge(vertex_pref v) {
             remove_directed_edge(v);
-            v->remove_directed_edge(shared_from_this());
+            v->remove_directed_edge(this->shared_from_this());
         }
 
         std::vector<edge_ref> edges() const {
-            const auto resolve = [](const edge_map::value_type &pair) {
+            const auto resolve = [](const auto &pair) {
                 return std::reference_wrapper(*pair.second);
             };
             std::vector<edge_ref> vec;
@@ -134,7 +136,7 @@ class Graph {
         }
 
         std::vector<vertex_ref> neighbors() const {
-            const auto resolve = [](const edge_map::value_type &pair) {
+            const auto resolve = [](const auto &pair) {
                 return std::reference_wrapper(*pair.second->to());
             };
             std::vector<vertex_ref> vec;
@@ -225,7 +227,7 @@ class Graph {
     std::vector<vertex_t> vertices() const {
         std::vector<vertex_t> nodes;
         const auto resolve = [this](const auto &pair) {
-            return make_vertex(pair.second);
+            return this->make_vertex(pair.second);
         };
         nodes.reserve(_vertices.size());
         std::transform(itr_range(_vertices), std::back_inserter(nodes),
@@ -255,7 +257,7 @@ class Graph {
         return _vertices.at(u)->value();
     }
 
-    void value(vertex_id u, const vertex_value_t &val) const {
+    void value(vertex_id u, const vertex_value_t &val) {
         vertex_check(true, u, "vertex ", u, " is not found");
         _vertices.at(u)->value(val);
     }
@@ -308,7 +310,7 @@ class Graph {
         return _vertices.at(from)->edge(_vertices.at(to))->weight();
     }
 
-    void weight(vertex_id from, vertex_id to, const edge_weight_t &wei) const {
+    void weight(vertex_id from, vertex_id to, const edge_weight_t &wei) {
         vertex_check(true, from, "vertex ", from, " is not found");
         vertex_check(true, to, "vertex ", to, " is not found");
         _vertices.at(from)->edge(_vertices.at(to))->weight(wei);
@@ -318,7 +320,7 @@ class Graph {
                            const edge_weight_t &wei) const {
         vertex_check(true, from, "vertex ", from, " is not found");
         vertex_check(true, to, "vertex ", to, " is not found");
-        _vertices.at(from)->add_edge(_vertices.at(to), wei);
+        _vertices.at(from)->add_directed_edge(_vertices.at(to), wei);
     }
 
     void add_edge(vertex_id from, vertex_id to,
