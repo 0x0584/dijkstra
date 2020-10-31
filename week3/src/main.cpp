@@ -1,4 +1,5 @@
 #include "graph.hpp"
+#include <iomanip>
 
 int main(int, char const *[]) {
     Graph g;
@@ -19,11 +20,16 @@ int main(int, char const *[]) {
         g.add_directed_edge(u, v, 1);
     }
 
-    for (const auto &v : g.vertices()) {
-        std::cout << "(" << v.first << "):\n ";
-        for (const auto &e : g.edges(v.first))
-            std::cout << " (" << std::get<1>(e) << ")";
-        std::cout << "\n\n";
-    }
+    auto vec = g.vertices();
+    std::cout << "number of vertices: " << vec.size() << "\n";
+    std::cout << "number of edges: " << g.edges().size() << "\n\n";
+
+    std::sort(itr_range(vec), [&g](const auto &e1, const auto &e2) {
+        return g.edges(e1.first).size() > g.edges(e2.first).size();
+    });
+
+    for (const auto &v : vec)
+        std::cout << "(" << v.first << ") has " << g.edges(v.first).size()
+                  << " edges\n";
     return 0;
 }
