@@ -40,5 +40,5 @@ before_script:
   - eval "${MATRIX_EVAL}"
 
 script:
-  - make -C week3
-  - make -C week4
+  - make -C week3 TEST=1
+  - make -C week4 TEST=1

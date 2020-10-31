@@ -1,3 +1,6 @@
+DEBUG	 ?= 0
+TEST	 ?= 0
+
 NAME     = graph
 
 SRCDIR   = src
@@ -5,7 +8,13 @@ HEADIR   = include
 OBJDIR   = .obj
 
 CXX      = g++
-CPPFLAGS = -ggdb -Wall -Wextra -Wpedantic -I$(HEADIR) -std=c++1z
+CPPFLAGS = -Wall -Wextra -Wpedantic -I$(HEADIR) -std=c++1z
+
+ifeq ($(DEBUG),1)
+	CPPFLAGS += -ggdb -Og
+else
+	CPPFLAGS += -O3
+endif
 
 SRCS     := $(shell find $(SRCDIR) -name '*.cpp' -type f)
 HEADS    := $(shell find $(HEADIR) -name '*.hpp' -type f)
@@ -18,10 +27,12 @@ define test
 endef
 
 all: $(NAME)
+ifeq ($(TEST),1)
 	wget -c 'https://algs4.cs.princeton.edu/code/algs4-data.zip'
 	$(call test,tinyDG.txt)
 	$(call test,mediumDG.txt)
 	$(call test,largeDG.txt)
+endif
 
 $(NAME): $(OBJS)
 	$(CXX) $(CPPFLAGS) -o $@ $^
