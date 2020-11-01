@@ -20,9 +20,11 @@
 // XXX: reimplement public API
 
 // template <typename T = int, typename W = T>
+
 using T = int;
 using W = T;
 
+// template <typename T = int, typename W = T>
 class Graph {
   public:
     using vertex_id = std::size_t;
@@ -104,8 +106,8 @@ class Graph {
         void add_directed_edge(vertex_pref v, const edge_weight_t &wei) {
             if (adjacent(v))
                 return;
-            vertex_wptr ptr = weak_from_this();
-            _edges.emplace(v->_id, std::make_unique<Edge>(ptr.lock(), v, wei));
+            _edges.emplace(v->_id,
+                           std::make_unique<Edge>(shared_from_this(), v, wei));
         }
 
         void add_edge(vertex_pref v, const edge_weight_t &wei) {
@@ -115,14 +117,14 @@ class Graph {
         void add_edge(vertex_pref v, const edge_weight_t &wei,
                       const edge_weight_t &re_wei) {
             add_directed_edge(v, wei);
-            v->add_directed_edge(this->shared_from_this(), re_wei);
+            v->add_directed_edge(shared_from_this(), re_wei);
         }
 
         void remove_directed_edge(vertex_pref v) { _edges.erase(v->_id); }
 
         void remove_edge(vertex_pref v) {
             remove_directed_edge(v);
-            v->remove_directed_edge(this->shared_from_this());
+            v->remove_directed_edge(shared_from_this());
         }
 
         std::vector<edge_ref> edges() const {
@@ -341,6 +343,11 @@ class Graph {
     }
 
     void remove_directed_edge(vertex_id from, vertex_id to) const;
+
+    void show_pointer_stats() {
+        for (const auto &v : _vertices)
+            std::cout << "shared:" << v.second.use_count() << "\n";
+    }
 
   private:
     vertex_map _vertices;

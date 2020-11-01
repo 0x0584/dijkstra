@@ -1,4 +1,4 @@
-DEBUG	 ?= 0
+DEBUG	 ?= 1
 TEST	 ?= 0
 
 NAME     = graph
