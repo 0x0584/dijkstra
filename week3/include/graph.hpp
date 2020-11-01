@@ -4,11 +4,11 @@
 #include <algorithm>
 #include <functional>
 #include <iostream>
+#include <map>
 #include <memory>
 #include <random>
 #include <sstream>
 #include <stdexcept>
-#include <unordered_map>
 #include <utility>
 #include <vector>
 
@@ -74,10 +74,21 @@ class Graph {
         bool residual(const edge_ptr &other) const {
             return from() == other->to() and to() == other->from();
         }
+
+        static edge_t make(edge_ref e) {
+            const auto &_edge = e.get();
+            return std::make_tuple(_edge.from()->identity(),
+                                   _edge.to()->identity(), _edge.weight());
+        }
+
+        static edge_t make(edge_pref e) {
+            return std::make_tuple(e->from()->identity(), e->to()->identity(),
+                                   e->weight());
+        }
     };
 
     class Vertex : public std::enable_shared_from_this<Vertex> {
-        using edge_map = std::unordered_map<vertex_id, edge_ptr>;
+        using edge_map = std::map<vertex_id, edge_ptr>;
 
         edge_map _edges;
         vertex_id _id;
@@ -146,9 +157,17 @@ class Graph {
             std::transform(itr_range(_edges), std::back_inserter(vec), resolve);
             return vec;
         }
+
+        static vertex_t make(vertex_ref v) {
+            return std::make_pair(v.get().identity(), v.get().value());
+        }
+
+        static vertex_t make(vertex_pref v) {
+            return std::make_pair(v->identity(), v->value());
+        }
     };
 
-    using vertex_map = std::unordered_map<vertex_id, vertex_ptr>;
+    using vertex_map = std::map<vertex_id, vertex_ptr>;
 
     std::pair<vertex_id, vertex_id> generate_edge(std::size_t limit) {
         auto generate_vertex = [&limit, this](vertex_id old = -1) {
@@ -163,25 +182,6 @@ class Graph {
         };
         vertex_id u = generate_vertex(), v = generate_vertex(u);
         return std::make_pair(u, v);
-    }
-
-    vertex_t make_vertex(vertex_ref v) const {
-        return std::make_pair(v.get().identity(), v.get().value());
-    }
-
-    vertex_t make_vertex(vertex_pref v) const {
-        return std::make_pair(v->identity(), v->value());
-    }
-
-    edge_t make_edge(edge_ref e) const {
-        const auto &_edge = e.get();
-        return std::make_tuple(_edge.from()->identity(), _edge.to()->identity(),
-                               _edge.weight());
-    }
-
-    edge_t make_edge(edge_pref e) const {
-        return std::make_tuple(e->from()->identity(), e->to()->identity(),
-                               e->weight());
     }
 
   public:
@@ -203,19 +203,19 @@ class Graph {
         }
     }
 
-#define make_edge(e) std::get<0>(e), std::get<1>(e), std::get<2>(e)
     Graph(const std::vector<vertex_t> &vertices,
           const std::vector<edge_t> &edges, bool directed = true) {
+        using std::get;
+
         for (const auto &v : vertices)
             add_vertex(v.first, v.second);
         for (const auto &e : edges) {
             if (directed)
-                add_directed_edge(make_edge(e));
+                add_directed_edge(get<0>(e), get<1>(e), get<2>(e));
             else
-                add_edge(make_edge(e));
+                add_edge(get<0>(e), get<1>(e), get<2>(e));
         }
     }
-#undef make_edge
 
     Graph &operator=(const Graph &other) = delete;
     Graph &operator=(Graph &&other) noexcept {
@@ -228,8 +228,8 @@ class Graph {
 
     std::vector<vertex_t> vertices() const {
         std::vector<vertex_t> nodes;
-        const auto resolve = [this](const auto &pair) {
-            return this->make_vertex(pair.second);
+        const auto resolve = [](const auto &pair) {
+            return Vertex::make(pair.second);
         };
         nodes.reserve(_vertices.size());
         std::transform(itr_range(_vertices), std::back_inserter(nodes),
@@ -239,10 +239,10 @@ class Graph {
 
     std::vector<edge_t> edges() const {
         std::vector<edge_t> links;
-        const auto resolve = [&links, this](const auto &pair) {
+        const auto resolve = [&links](const auto &pair) {
             const auto &v_edges = pair.second->edges();
             return std::transform(itr_range(v_edges), std::back_inserter(links),
-                                  [this](edge_ref e) { return make_edge(e); });
+                                  [](edge_ref e) { return Edge::make(e); });
         };
         std::for_each(itr_range(_vertices), resolve);
         links.shrink_to_fit();
@@ -255,7 +255,7 @@ class Graph {
 
     vertex_t vertex(vertex_id u) const {
         vertex_check(true, u, "vertex ", u, " is not found");
-        return make_vertex(_vertices.at(u));
+        return Vertex::make(_vertices.at(u));
     }
 
     const vertex_value_t &value(vertex_id u) const {
@@ -273,7 +273,7 @@ class Graph {
         auto v_edges = _vertices.at(u)->edges();
         links.reserve(v_edges.size());
         std::transform(itr_range(v_edges), std::back_inserter(links),
-                       [this](edge_ref edge) { return make_edge(edge); });
+                       [](edge_ref edge) { return Edge::make(edge); });
         return links;
     }
 
@@ -282,9 +282,8 @@ class Graph {
         std::vector<vertex_t> nodes;
         auto neis = _vertices.at(u)->neighbors();
         nodes.reserve(neis.size());
-        std::transform(
-            itr_range(neis), std::back_inserter(nodes),
-            [this](vertex_ref vertex) { return make_vertex(vertex); });
+        std::transform(itr_range(neis), std::back_inserter(nodes),
+                       [](vertex_ref vertex) { return Vertex::make(vertex); });
         return nodes;
     }
 
@@ -307,7 +306,7 @@ class Graph {
         if (not adjacent(from, to))
             throw std::runtime_error("no edge between " + std::to_string(from) +
                                      " and " + std::to_string(to));
-        return make_edge(_vertices.at(from)->edge(_vertices.at(to)));
+        return Edge::make(_vertices.at(from)->edge(_vertices.at(to)));
     }
 
     const edge_weight_t &weight(vertex_id from, vertex_id to) const {
