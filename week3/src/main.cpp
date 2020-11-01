@@ -1,34 +1,22 @@
 #include "graph.hpp"
 
 int main(int, char const *[]) {
-    const std::vector<int> ids = {1, 2, 3, 4};
     Graph g;
+    int n, m;
 
-    for (const auto &id : ids) {
-        std::cout << "vertex: " << id << std::endl;
-        g.add_vertex(id, id);
+    std::cin >> n >> m;
+    while (n--) {
+        int u, v;
+        std::cin >> u >> v;
+        if (not g.has_vertex(u))
+            g.add_vertex(u, u);
+        if (not g.has_vertex(v))
+            g.add_vertex(v, v);
+        g.add_directed_edge(u, v, 1);
     }
 
-    for (const auto &v : g.vertices())
-        std::cout << "vertex: " << v.first << " " << v.second << std::endl;
-
-    for (int i = 0; i < int(ids.size()); i += 2) {
-        for (int j = 1; j < int(ids.size()); j += 2) {
-            std::cout << "edge: " << ids[i] << " " << ids[j] << std::endl;
-            g.add_edge(ids[i], ids[j], i + j, i - j);
-        }
-    }
-
-    g.show_pointer_stats();
-
-    std::cout << " ------------- " << std::endl;
-    for (const auto &v : g.vertices()) {
-        std::cout << v.first << ": " << v.second << "\n";
-        for (const auto &e : g.edges(v.first)) {
-            std::cout << " -> " << std::get<1>(e) << " " << std::get<2>(e)
-                      << "\n";
-        }
-    }
+    std::cout << "number of vertices: " << g.vertices().size() << std::endl;
+    std::cout << "number of edges: " << g.edges().size() << std::endl;
 
     return 0;
 }

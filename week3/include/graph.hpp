@@ -249,6 +249,10 @@ class Graph {
         return links;
     }
 
+    bool has_vertex(vertex_id u) {
+        return _vertices.find(u) != std::end(_vertices);
+    }
+
     vertex_t vertex(vertex_id u) const {
         vertex_check(true, u, "vertex ", u, " is not found");
         return make_vertex(_vertices.at(u));
