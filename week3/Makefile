@@ -31,7 +31,7 @@ ifeq ($(TEST),1)
 	wget -c 'https://algs4.cs.princeton.edu/code/algs4-data.zip'
 	$(call test,tinyDG.txt)
 	$(call test,mediumDG.txt)
-	$(call test,largeDG.txt)
+#   $(call test,largeDG.txt)
 endif
 
 $(NAME): $(OBJS)
