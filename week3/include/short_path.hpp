@@ -2,6 +2,7 @@
 #define SHORT_PATH_H
 
 #include "graph.hpp"
+#include "pq.hpp"
 
 template <typename T, typename W>
 struct dijkstra {

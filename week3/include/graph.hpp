@@ -14,15 +14,8 @@
 
 #define itr_range(cont) std::begin(cont), std::end(cont)
 
-// XXX: use smart pointers instead of raw pointers
-// XXX: use templates everywhere
-
-// XXX: reimplement public API
-
-// template <typename T = int, typename W = T>
-
 using T = int;
-using W = T;
+using W = int;
 
 // template <typename T = int, typename W = T>
 class Graph {
@@ -75,6 +68,11 @@ class Graph {
             return from() == other->to() and to() == other->from();
         }
 
+        static edge_ptr make(vertex_pref from, vertex_pref to,
+                             const edge_weight_t &wei) {
+            return std::make_unique<Edge>(from, to, wei);
+        }
+
         static edge_t make(edge_ref e) {
             const auto &_edge = e.get();
             return std::make_tuple(_edge.from()->identity(),
@@ -118,7 +116,7 @@ class Graph {
             if (adjacent(v))
                 return;
             _edges.emplace(v->_id,
-                           std::make_unique<Edge>(shared_from_this(), v, wei));
+                           Edge::make(this->shared_from_this(), v, wei));
         }
 
         void add_edge(vertex_pref v, const edge_weight_t &wei) {
@@ -128,14 +126,14 @@ class Graph {
         void add_edge(vertex_pref v, const edge_weight_t &wei,
                       const edge_weight_t &re_wei) {
             add_directed_edge(v, wei);
-            v->add_directed_edge(shared_from_this(), re_wei);
+            v->add_directed_edge(this->shared_from_this(), re_wei);
         }
 
         void remove_directed_edge(vertex_pref v) { _edges.erase(v->_id); }
 
         void remove_edge(vertex_pref v) {
             remove_directed_edge(v);
-            v->remove_directed_edge(shared_from_this());
+            v->remove_directed_edge(this->shared_from_this());
         }
 
         std::vector<edge_ref> edges() const {
@@ -169,20 +167,7 @@ class Graph {
 
     using vertex_map = std::map<vertex_id, vertex_ptr>;
 
-    std::pair<vertex_id, vertex_id> generate_edge(std::size_t limit) {
-        auto generate_vertex = [&limit, this](vertex_id old = -1) {
-            static std::random_device gen;
-            static std::uniform_int_distribution<std::size_t> u(0, limit);
-            vertex_id vertex;
-            do {
-                vertex = u(gen);
-            } while (vertex != old and
-                     _vertices.find(vertex) != std::end(_vertices));
-            return vertex;
-        };
-        vertex_id u = generate_vertex(), v = generate_vertex(u);
-        return std::make_pair(u, v);
-    }
+    vertex_map _vertices;
 
   public:
     Graph() = default;
@@ -194,11 +179,12 @@ class Graph {
     Graph(std::size_t n_vertices, double edge_density) {
         if (edge_density > 1)
             throw std::runtime_error("edge_density > 1");
-        const std::size_t n_edges = (n_vertices * (n_vertices - 1)) / 2;
-        for (std::size_t i = 0; i < n_vertices; ++i)
+        const std::size_t n_edges =
+            ((n_vertices * (n_vertices - 1)) / 2) * edge_density;
+        for (std::size_t i = 1; i <= n_vertices; ++i)
             add_vertex(i, 1);
         for (std::size_t i = 0; i < n_edges; ++i) {
-            std::pair<vertex_id, vertex_id> _edge = generate_edge(n_vertices);
+            auto &&_edge = generate_edge(n_vertices);
             add_edge(_edge.first, _edge.second, 1);
         }
     }
@@ -242,7 +228,7 @@ class Graph {
         const auto resolve = [&links](const auto &pair) {
             const auto &v_edges = pair.second->edges();
             return std::transform(itr_range(v_edges), std::back_inserter(links),
-                                  [](edge_ref e) { return Edge::make(e); });
+                                  [](auto e) { return Edge::make(e); });
         };
         std::for_each(itr_range(_vertices), resolve);
         links.shrink_to_fit();
@@ -273,7 +259,7 @@ class Graph {
         auto v_edges = _vertices.at(u)->edges();
         links.reserve(v_edges.size());
         std::transform(itr_range(v_edges), std::back_inserter(links),
-                       [](edge_ref edge) { return Edge::make(edge); });
+                       [](auto edge) { return Edge::make(edge); });
         return links;
     }
 
@@ -283,7 +269,7 @@ class Graph {
         auto neis = _vertices.at(u)->neighbors();
         nodes.reserve(neis.size());
         std::transform(itr_range(neis), std::back_inserter(nodes),
-                       [](vertex_ref vertex) { return Vertex::make(vertex); });
+                       [](auto vertex) { return Vertex::make(vertex); });
         return nodes;
     }
 
@@ -353,7 +339,15 @@ class Graph {
     }
 
   private:
-    vertex_map _vertices;
+    std::pair<vertex_id, vertex_id> generate_edge(std::size_t limit) {
+        static std::random_device gen;
+        static std::uniform_int_distribution<std::size_t> uniform(1, limit);
+        vertex_id u, v;
+        do {
+            u = uniform(gen), v = uniform(gen);
+        } while (adjacent(u, v));
+        return std::make_pair(u, v);
+    }
 
     template <typename... Args>
     void vertex_check(bool in, vertex_id id, const Args &... msg) const {
