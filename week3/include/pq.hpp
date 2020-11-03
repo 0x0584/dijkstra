@@ -3,47 +3,76 @@
 
 #include <functional>
 #include <iostream>
+#include <map>
 #include <set>
 #include <stdexcept>
-#include <unordered_map>
 
+/// \brief Priority Queue Data structure
+///
+/// It orders items based on their priority, which could be changed.
 class PQ {
   public:
-    using pq_pair = std::pair<int, int>;
+    /// \brief each item in the priority queue is a pair of value and priority
+    using item = std::pair</* value */ int, /* priority */ int>;
+
+    /// \brief functor for comparing two items by their priority
     struct cmp {
-        bool operator()(const pq_pair &u, const pq_pair &v) const {
+        bool operator()(const item &u, const item &v) const {
             return u.second < v.second;
         }
     };
 
   private:
-    std::unordered_map<int, pq_pair> items;
-    std::set<std::reference_wrapper<pq_pair>, cmp> pq;
+    /// \brief keeping items inside a map to garante O(lg n) for all operations
+    ///
+    /// values should be unique since push() throws if an item is not inserted
+    std::map<int, item> items;
+
+    /// \brief keeping the items inside a set to make sure their ordered since
+    /// STL sets are ordered using cmp (item's priority). The reference wrapper
+    /// is to avoid having duplicates, all items are stored in the items map
+    std::set<std::reference_wrapper<item>, cmp> pq;
 
   public:
-    PQ() = default;
+    PQ() = default; ///< default constructor
 
+    /// \brief pushing an new unique item to the priority queue, throws if the
+    /// items exists beforehand. see contains().
+    ///
+    /// \param u item's value
+    /// \param priority item's priority defaulted to 0 (top priority)
     void push(int u, int priority = 0) {
+        // add to items
         if (not items.emplace(u, std::make_pair(u, priority)).second)
             throw std::runtime_error(std::to_string(u) + " already exists");
-        pq.emplace(items.at(u));
+        pq.emplace(items.at(u)); // then add item to priority queue
     }
 
-    void push(const pq_pair &pair) { push(pair.first, pair.second); }
+    /// \brief Overload for handy usage (probably)
+    ///
+    /// \param item a pair of {value, priority}
+    void push(const item &pair) { push(pair.first, pair.second); }
 
+    /// \brief changes the priority of an existing item, throws if not
+    ///
+    /// \param u exicting item's value
+    /// \param priority new priority
     void change_priority(int u, int priority) {
         if (items.find(u) == std::end(items))
             throw std::out_of_range(std::to_string(u) + " doesn't exist");
-        auto &item = items.at(u);
-        pq.erase(item);
-        item.second = priority;
-        pq.emplace(items.at(u));
+        pq.erase(items.at(u));         // remove the item from the set
+        items.at(u).second = priority; // do the change
+        pq.emplace(items.at(u));       // add it to the set with new priority
     }
 
-    void change_priority(const pq_pair &pair) {
+    /// \brief Overload for handy usage
+    ///
+    /// \param item a pair of {value, new_priority}
+    void change_priority(const item &pair) {
         change_priority(pair.first, pair.second);
     }
 
+    /// \brief removes the top item from the priority queue, throws if empty
     void pop() {
         if (empty())
             throw std::runtime_error("Empty priority queue");
@@ -52,25 +81,39 @@ class PQ {
         items.erase(item.first);
     }
 
-    pq_pair top() const {
+    /// \brief get the item with top priority
+    ///
+    /// \return item at top
+    item top() const {
         if (empty())
             throw std::runtime_error("Empty priority queue");
         return std::begin(pq)->get();
     }
 
-    const pq_pair &retrieve(int u) const {
+    /// \brief get certain item by its value, throws if the item is not found
+    ///
+    /// \return the desired item
+    const item &retrieve(int u) const {
         if (not contains(u))
             throw std::out_of_range(std::to_string(u) + " doesn't exist");
         return items.at(u);
     }
 
+    /// \return true if item's value is found, false otherwise
     bool contains(int u) const noexcept {
         return items.find(u) != std::end(items);
     }
 
-    bool empty() const noexcept { return not size(); }
+    /// \return true is empty, fasle otherwise
+    bool empty() const noexcept { return items.empty(); }
+
+    /// \brief
     int size() const noexcept { return pq.size(); }
 
+    /// \brief an internal iterator implementation to iterate over the priority
+    /// queue items. to be used the range for loops
+    ///
+    /// it can incremented only, and dereferenced using wither `*` or `->`
     class iterator {
         using iterator_type = typename decltype(pq)::iterator;
         iterator_type itr;
@@ -80,17 +123,26 @@ class PQ {
       public:
         explicit iterator(iterator_type itr) : itr(itr) {}
 
-        const pq_pair &operator*() const noexcept { return itr->get(); }
-        const pq_pair &operator->() const noexcept { return itr->get(); }
+        const item &operator*() const noexcept { return itr->get(); }
+        const item &operator->() const noexcept { return itr->get(); }
         bool operator==(const iterator &rhs) const { return itr == rhs.itr; }
         bool operator!=(const iterator &rhs) const { return itr != rhs.itr; }
         iterator operator++() { return advance(1); }
         iterator &operator++(int) { return advance(1); }
     };
 
+    /// \brief begin iterator of the priority queue
+    ///
+    /// \return iterator to the beginning of the priority queue
     iterator begin() const { return iterator(std::begin(pq)); }
+
+    /// \brief end iterator to the end of the priority queue.
+    /// it's not the last item, since end() is passed the last item
+    ///
+    /// \return iterator to the end of the priority queue
     iterator end() const { return iterator(std::end(pq)); }
 
+    /// \brief unit testing for all functions of the class
     static void unit_testing() noexcept {
         std::cout << " ----------- Testing Priority Queue ---------------\n";
         auto output = [](const std::string &msg, const PQ &Cont) {
