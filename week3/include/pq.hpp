@@ -23,7 +23,8 @@ class PQ {
     };
 
   private:
-    /// \brief keeping items inside a map to garante O(lg n) for all operations
+    /// \brief keeping items inside a map to guarantee O(lg n) for all
+    /// operations
     ///
     /// values should be unique since push() throws if an item is not inserted
     std::map<int, item> items;
@@ -55,7 +56,7 @@ class PQ {
 
     /// \brief changes the priority of an existing item, throws if not
     ///
-    /// \param u exicting item's value
+    /// \param u exciting item's value
     /// \param priority new priority
     void change_priority(int u, int priority) {
         if (items.find(u) == std::end(items))
@@ -104,7 +105,7 @@ class PQ {
         return items.find(u) != std::end(items);
     }
 
-    /// \return true is empty, fasle otherwise
+    /// \return true is empty, false otherwise
     bool empty() const noexcept { return items.empty(); }
 
     /// \brief
@@ -167,7 +168,7 @@ class PQ {
         output("constructing", q);
         for (auto to = 10, loop = 0; loop < to; loop += 2)
             q.change_priority(loop, q.retrieve(loop).second * 2);
-        output("altering priority of even entires", q);
+        output("altering priority of even entries", q);
 
         for (auto to = 10, loop = 0; loop < to; loop += 2) {
             auto &&_top = q.top();
