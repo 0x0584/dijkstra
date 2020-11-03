@@ -115,13 +115,19 @@ class Graph {
     const edge_weight_t &weight(std::pair<vertex_id, vertex_id>) const;
     void weight(std::pair<vertex_id, vertex_id> e, const edge_weight_t &wei);
     void add_directed_edge(std::pair<vertex_id, vertex_id> e,
-                           const edge_weight_t &wei) const;
+                           const edge_weight_t &wei);
+    void create_directed_edge(std::pair<vertex_id, vertex_id> e,
+                           const edge_weight_t &wei);
     void add_edge(std::pair<vertex_id, vertex_id> e,
-                  const edge_weight_t &wei) const;
+                  const edge_weight_t &wei);
+    void create_edge(std::pair<vertex_id, vertex_id> e,
+                  const edge_weight_t &wei);
     void add_edge(std::pair<vertex_id, vertex_id> e, const edge_weight_t &wei,
-                  const edge_weight_t &re_wei) const;
-    void remove_edge(std::pair<vertex_id, vertex_id> e) const;
-    void remove_directed_edge(std::pair<vertex_id, vertex_id> e) const;
+                  const edge_weight_t &re_wei);
+    void create_edge(std::pair<vertex_id, vertex_id> e, const edge_weight_t &wei,
+                  const edge_weight_t &re_wei);
+    void remove_edge(std::pair<vertex_id, vertex_id> e);
+    void remove_directed_edge(std::pair<vertex_id, vertex_id> e);
 
     static void unit_testing() noexcept;
 

@@ -52,23 +52,22 @@ path Dijkstra::find_path(vertex_id source, vertex_id sink) {
 }
 
 void Dijkstra::unit_testing() noexcept {
-    for (double d = 0; d < 1; d += 0.1) {
-        Graph _g{50, 0.8};
+    const auto test = [](double d) {
+        Graph _g{50, d};
         Dijkstra algo{_g};
-        const auto &verts = _g.vertices();
+
+        auto &&verts = _g.vertices();
+        std::pair<int, int> avg = {0, 0};
+
+        for (unsigned j = 1; j < verts.size(); ++j)
+            if (path path = algo.find_path(verts.front(), verts[j]);
+                path.cost())
+                avg.first += path.cost(), avg.second++;
         std::cout << "graph has " << verts.size() << " vertices and "
-                  << _g.edges().size() << " edges\n";
-        for (const auto &u : verts) {
-            for (const auto &v : verts) {
-                if (u == v)
-                    continue;
-                if (path path = algo.find_path(u, v); path.cost()) {
-                    std::cout << " " << u << " - " << v << ":";
-                    for (const auto &e : path.vertices())
-                        std::cout << " " << e;
-                    std::cout << " > cost " << path.cost() << std::endl;
-                }
-            }
-        }
-    }
+                  << _g.edges().size()
+                  << " edges has path cost: " << (avg.first / avg.second)
+                  << "\n";
+    };
+
+    test(0.2), test(0.4);
 }

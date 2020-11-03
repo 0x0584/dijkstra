@@ -1,5 +1,7 @@
 #include "graph.hpp"
 
+#include <iomanip>
+
 Graph::Graph(Graph &&other) noexcept
     : _vertices(std::exchange(other._vertices, {})) {}
 
@@ -23,7 +25,6 @@ Graph::Graph(int n_vertices, double edge_density) {
         } while (v == u or adjacent(u, v));
         add_edge({u, v}, vals(gen));
     }
-    std::cout << "\n";
 }
 
 Graph::Graph(
@@ -100,6 +101,8 @@ void Graph::add_vertex(vertex_id u, const vertex_value_t &val) {
 
 void Graph::remove_vertex(vertex_id u) {
     vertex_check(true, u, "vertex ", u, " is not found");
+    for (const auto &[e1, e2] : edges(u))
+        remove_directed_edge({e2, e1});
     _vertices.erase(u);
 }
 
@@ -117,6 +120,9 @@ const edge_weight_t &Graph::weight(std::pair<vertex_id, vertex_id> e) const {
     auto &&[from, to] = e;
     vertex_check(true, from, "vertex ", from, " is not found");
     vertex_check(true, to, "vertex ", to, " is not found");
+    if (not adjacent(from, to))
+        throw std::out_of_range("no edge between " + std::to_string(from) +
+                                " and " + std::to_string(to));
     return _vertices.at(from)->edge(_vertices.at(to))->weight();
 }
 
@@ -125,11 +131,14 @@ void Graph::weight(std::pair<vertex_id, vertex_id> e,
     auto &&[from, to] = e;
     vertex_check(true, from, "vertex ", from, " is not found");
     vertex_check(true, to, "vertex ", to, " is not found");
+    if (not adjacent(from, to))
+        throw std::out_of_range("no edge between " + std::to_string(from) +
+                                " and " + std::to_string(to));
     _vertices.at(from)->edge(_vertices.at(to))->weight(wei);
 }
 
 void Graph::add_directed_edge(std::pair<vertex_id, vertex_id> e,
-                              const edge_weight_t &wei) const {
+                              const edge_weight_t &wei) {
     auto &&[from, to] = e;
     vertex_check(true, from, "vertex ", from, " is not found");
     vertex_check(true, to, "vertex ", to, " is not found");
@@ -137,29 +146,175 @@ void Graph::add_directed_edge(std::pair<vertex_id, vertex_id> e,
 }
 
 void Graph::add_edge(std::pair<vertex_id, vertex_id> e,
-                     const edge_weight_t &wei) const {
+                     const edge_weight_t &wei) {
     add_edge(e, wei, wei);
 }
 
 void Graph::add_edge(std::pair<vertex_id, vertex_id> e,
-                     const edge_weight_t &wei,
-                     const edge_weight_t &re_wei) const {
+                     const edge_weight_t &wei, const edge_weight_t &re_wei) {
     add_directed_edge(e, wei);
     add_directed_edge({e.second, e.first}, re_wei);
 }
 
-void Graph::remove_edge(std::pair<vertex_id, vertex_id> e) const {
+void Graph::create_directed_edge(std::pair<vertex_id, vertex_id> e,
+                                 const edge_weight_t &wei) {
+    auto &&[from, to] = e;
+    if (not has_vertex(from))
+        add_vertex(from, 0);
+    if (not has_vertex(to))
+        add_vertex(to, 0);
+    _vertices.at(from)->add_directed_edge(_vertices.at(to), wei);
+}
+
+void Graph::create_edge(std::pair<vertex_id, vertex_id> e,
+                        const edge_weight_t &wei) {
+    create_edge(e, wei, wei);
+}
+
+void Graph::create_edge(std::pair<vertex_id, vertex_id> e,
+                        const edge_weight_t &wei, const edge_weight_t &re_wei) {
+    create_directed_edge(e, wei);
+    create_directed_edge({e.second, e.first}, re_wei);
+}
+
+void Graph::remove_edge(std::pair<vertex_id, vertex_id> e) {
     auto &&[from, to] = e;
     vertex_check(true, from, "vertex ", from, " is not found");
     vertex_check(true, to, "vertex ", to, " is not found");
+    if (not adjacent(from, to))
+        throw std::out_of_range("no edge between " + std::to_string(from) +
+                                " and " + std::to_string(to));
     _vertices.at(from)->remove_edge(_vertices.at(to));
 }
 
-void Graph::remove_directed_edge(std::pair<vertex_id, vertex_id> e) const {
+void Graph::remove_directed_edge(std::pair<vertex_id, vertex_id> e) {
     auto &&[from, to] = e;
     vertex_check(true, from, "vertex ", from, " is not found");
     vertex_check(true, to, "vertex ", to, " is not found");
+    if (not adjacent(from, to))
+        throw std::out_of_range("no edge between " + std::to_string(from) +
+                                " and " + std::to_string(to));
     _vertices.at(from)->remove_directed_edge(_vertices.at(to));
 }
 
-void Graph::unit_testing() noexcept {}
+void Graph::unit_testing() noexcept {
+    Graph g;
+
+    const int n_vertices = 10;
+
+    const auto print_graph = [](const Graph &g, const std::string &msg,
+                                bool print_verts, bool print_edges) {
+        std::cout << "##### " << msg << " #####\n";
+
+        int line_break = 7;
+        if (print_verts) {
+            auto &&verts = g.vertices();
+            std::cout << "vertex set: {\n";
+            for (unsigned i = 0; i < verts.size(); ++i)
+                std::cout << "  " << verts[i] << " -> " << g.value(verts[i])
+                          << (i + 1 == verts.size() ? "" : ",")
+                          << ((i and i % line_break == 0 and
+                               i + 1 != verts.size())
+                                  ? "\n"
+                                  : "");
+            std::cout << "\n}\n";
+            if (print_edges)
+                std::cout << '\n';
+        }
+        if (print_edges) {
+            line_break = 4;
+            auto &&edges = g.edges();
+            std::cout << "edge set: {\n";
+            for (unsigned i = 0; i < edges.size(); ++i)
+                std::cout << "  {" << edges[i].first << ", " << edges[i].second
+                          << "} -> " << g.weight(edges[i])
+                          << (i + 1 == edges.size() ? "" : ",")
+                          << (i and i % line_break == 0 and
+                                      i + 1 != edges.size()
+                                  ? "\n"
+                                  : "");
+            std::cout << "\n}\n";
+        }
+        if (print_verts or print_edges)
+            std::cout << std::endl;
+    };
+
+    const auto check_vertices = [](const Graph &g) {
+        std::cout << "### checking vertices ###\n";
+        for (vertex_id i = 1; i <= n_vertices; ++i)
+            std::cout << "has vertex " << i << ": " << std::boolalpha
+                      << g.has_vertex(i) << "\n";
+    };
+
+    for (vertex_id i = 1; i <= n_vertices; ++i)
+        g.add_vertex(i, n_vertices - i + 1);
+    print_graph(g, "constructing the graph", true, true);
+    check_vertices(g);
+    std::cout << std::endl;
+
+    auto &&verts = g.vertices();
+    for (unsigned i = 1; i < verts.size(); ++i) {
+        auto u = verts[i], v = verts[i - 1];
+        g.add_edge({u, v}, g.value(v), g.value(v));
+    }
+    print_graph(g, "adding undirected edges", false, true);
+
+    for (unsigned i = 0; i < verts.size(); i += 2)
+        g.remove_vertex(verts[i]);
+    print_graph(g, "removing odd vertices", true, true);
+    check_vertices(g);
+    std::cout << std::endl;
+
+    verts = g.vertices();
+    for (unsigned i = 1; i < verts.size(); i++) {
+        auto u = verts[i], v = verts[i - 1];
+        g.add_directed_edge({u, v}, g.value(v) + g.value(u));
+    }
+    print_graph(g, "adding directed edges", false, true);
+
+    for (unsigned i = 1; i < verts.size(); ++i) {
+        auto u = verts[i], v = verts[i - 1];
+        g.value(u, g.value(v) + g.value(u));
+    }
+    print_graph(g, "changing values", true, false);
+
+    auto &&_edges = g.edges();
+    for (unsigned i = 1; i < _edges.size(); ++i) {
+        auto u = _edges[i], v = _edges[i - 1];
+        g.weight(u, g.weight(u) + g.weight(v));
+    }
+    print_graph(g, "changing weights", false, true);
+
+    for (unsigned i = 0; i < verts.size(); ++i) {
+        for (unsigned j = 0; j < verts.size(); ++j) {
+            auto u = verts[i], v = verts[j];
+            if (u == v)
+                continue;
+            g.add_edge({u, v}, g.value(u) * 2, g.value(v) * 3);
+        }
+    }
+    print_graph(g, "making the graph complete", false, true);
+
+    for (unsigned i = 1; i < verts.size(); i += 2) {
+        auto u = verts[i], v = verts[i - 1];
+        g.remove_directed_edge({u, v});
+    }
+    print_graph(g, "removing directed edges", false, true);
+
+    for (unsigned i = 1; i < verts.size(); ++i) {
+        auto u = verts[i], v = verts[i - 1];
+        if (g.adjacent(u, v))
+            g.remove_edge({u, v});
+    }
+    print_graph(g, "undirected edges", true, true);
+
+    for (vertex_id i = 2; i <= n_vertices; ++i)
+        g.create_edge({i, i - 1}, n_vertices - i + 1);
+    check_vertices(g);
+    std::cout << "\n";
+    print_graph(g, "creating edges with the missing vertices", true, true);
+
+    Graph h = std::move(g);
+    print_graph(g, "graph is only movable, should be empty", true, true);
+    print_graph(h, "graph is only movable, should be old graph", true, true);
+}
