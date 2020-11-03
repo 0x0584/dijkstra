@@ -11,7 +11,7 @@ CXX      = g++
 CPPFLAGS = -Wall -Wextra -Wpedantic -I$(HEADIR) -std=c++1z
 
 ifeq ($(DEBUG),1)
-	CPPFLAGS += -ggdb -Og
+	CPPFLAGS += -ggdb #-Og
 else
 	CPPFLAGS += -O3
 endif
@@ -27,12 +27,13 @@ define test
 endef
 
 all: $(NAME)
-ifeq ($(TEST),1)
-	wget -c 'https://algs4.cs.princeton.edu/code/algs4-data.zip'
-	$(call test,tinyDG.txt)
-	$(call test,mediumDG.txt)
+#ifeq ($(TEST),1)
+#	wget -c 'https://algs4.cs.princeton.edu/code/algs4-data.zip'
+#	$(call test,tinyDG.txt)
+#	$(call test,mediumDG.txt)
 #   $(call test,largeDG.txt)
-endif
+#endif
+	./$(NAME)
 
 $(NAME): $(OBJS)
 	$(CXX) $(CPPFLAGS) -o $@ $^

@@ -1,16 +1,17 @@
-* Submission Tasks [1/5]
+* Submission Tasks [4/6]
 
 - [X] constructors for declaring and initializing a graph
-- [ ] Have a procedure that produces a randomly generated set of edges with positive distances
-- [ ] The random graph procedure should have edge density as a parameter and distance range as a parameter.  So a graph whose density is 0.1 would have 10% of its edges picked at random and its edge distance would be selected at random from the distance range.  The procedure should run through all possible undirected edges, say (i,j) and place the edge in the graph if a random probability calculation is less than the density
-- [ ] Compute for a set of randomly generated graphs an average shortest path
-- [ ] Printout of program, 200 words on what you learned, and output showing the average path length calculation.  Use densities: 20% and 40% on a graph of 50 nodes with a distance range of 1.0 to 10.0.  To get an average path length, compute the 49 paths: 1 to 2, 1 to 3, 1 to 4, …, 1 to 50.  In an instance where there is no path between 1 and n, omit that value from the average
+- [X] Have a procedure that produces a randomly generated set of edges with positive distances
+- [X] The random graph procedure should have edge density as a parameter and distance range as a parameter.  So a graph whose density is 0.1 would have 10% of its edges picked at random and its edge distance would be selected at random from the distance range.  The procedure should run through all possible undirected edges, say (i,j) and place the edge in the graph if a random probability calculation is less than the density
+- [X] Compute for a set of randomly generated graphs an average shortest path
+- [ ] Printout of program, 200 words on what you learned, and output showing the average path length calculation.
+- [ ] Use densities: 20% and 40% on a graph of 50 nodes with a distance range of 1.0 to 10.0.  To get an average path length, compute the 49 paths: 1 to 2, 1 to 3, 1 to 4, …, 1 to 50.  In an instance where there is no path between 1 and n, omit that value from the average
 
-* Shortest Path Tasks [2/3]
+* Shortest Path Tasks [3/3]
 
 + [X] Graph (G = (V, E)
 + [X] PriorityQueue
-+ [ ] ShortestPath algorithm.
++ [X] ShortestPath algorithm.
 
 ** Graph [10/10]
 
@@ -38,11 +39,10 @@
 + [X] top(PQ):returns the top element of the queue.
 + [X] size(PQ): return the number of queue_elements.
 
-** ShortestPath [0/3]
+** ShortestPath [2/2]
 
-+ [ ] vertices(List): list of vertices in G(V,E).
-+ [ ] path(u, w): find shortest path between u-w and returns the sequence of vertices representing shorest path u-v1-v2-…-vn-w.
-+ [ ] path_size(u, w): return the path cost associated with the shortest path.
++ [X] path(u, w): find shortest path between u-w and returns the sequence of vertices representing shorest path u-v1-v2-…-vn-w.
++ [X] path_size(u, w): return the path cost associated with the shortest path.
 
 * Notes
 

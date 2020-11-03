@@ -11,20 +11,19 @@
 #include <stdexcept>
 #include <utility>
 #include <vector>
+#include <chrono>
+#include <chrono>
+#include <thread>
 
 #define itr_range(cont) std::begin(cont), std::end(cont)
 
-using T = int;
-using W = int;
-
-// template <typename T = int, typename W = T>
 class Graph {
   public:
-    using vertex_id = std::size_t;
-    using vertex_value_t = T;
+    using vertex_id = int;
+    using vertex_value_t = int;
     using vertex_t = std::pair<vertex_id, vertex_value_t>;
 
-    using edge_weight_t = W;
+    using edge_weight_t = int;
     using edge_t = std::tuple<vertex_id, vertex_id, edge_weight_t>;
 
   protected:
@@ -53,6 +52,7 @@ class Graph {
             : _source(from), _sink(to), _wei(wei) {
             if (not from or not to)
                 throw std::runtime_error("Vertex was null");
+            // std::cout << to->identity() << "-" << from->identity() << "\n";
         }
 
         Edge &operator=(const Edge &other) = delete;
@@ -115,8 +115,7 @@ class Graph {
         void add_directed_edge(vertex_pref v, const edge_weight_t &wei) {
             if (adjacent(v))
                 return;
-            _edges.emplace(v->_id,
-                           Edge::make(this->shared_from_this(), v, wei));
+            _edges.emplace(v->_id, Edge::make(shared_from_this(), v, wei));
         }
 
         void add_edge(vertex_pref v, const edge_weight_t &wei) {
@@ -126,14 +125,14 @@ class Graph {
         void add_edge(vertex_pref v, const edge_weight_t &wei,
                       const edge_weight_t &re_wei) {
             add_directed_edge(v, wei);
-            v->add_directed_edge(this->shared_from_this(), re_wei);
+            v->add_directed_edge(shared_from_this(), re_wei);
         }
 
         void remove_directed_edge(vertex_pref v) { _edges.erase(v->_id); }
 
         void remove_edge(vertex_pref v) {
             remove_directed_edge(v);
-            v->remove_directed_edge(this->shared_from_this());
+            v->remove_directed_edge(shared_from_this());
         }
 
         std::vector<edge_ref> edges() const {
@@ -176,17 +175,28 @@ class Graph {
     Graph(Graph &&other) noexcept
         : _vertices(std::exchange(other._vertices, {})) {}
 
-    Graph(std::size_t n_vertices, double edge_density) {
+    Graph(int n_vertices, double edge_density) {
         if (edge_density > 1)
             throw std::runtime_error("edge_density > 1");
-        const std::size_t n_edges =
-            ((n_vertices * (n_vertices - 1)) / 2) * edge_density;
-        for (std::size_t i = 1; i <= n_vertices; ++i)
-            add_vertex(i, 1);
-        for (std::size_t i = 0; i < n_edges; ++i) {
-            auto &&_edge = generate_edge(n_vertices);
-            add_edge(_edge.first, _edge.second, 1);
+        const unsigned seed =
+            std::chrono::system_clock::now().time_since_epoch().count();
+        std::default_random_engine gen(seed);
+        std::uniform_int_distribution<int> verts(1, n_vertices);
+        std::uniform_int_distribution<int> vals(1, 500);
+
+        int n_edges = edge_density * ((n_vertices * (n_vertices - 1)) / 2);
+        for (int i = 1; i <= n_vertices; ++i)
+            add_vertex(i, vals(gen));
+
+        for (int i = 0; i < n_edges; ++i) {
+            vertex_id u, v;
+            do {
+                u = verts(gen), v = verts(gen);
+            } while (v == u or adjacent(u, v));
+            // std::cout << u << "-" << v << " ";
+            add_edge(u, v, vals(gen));
         }
+        std::cout << "\n";
     }
 
     Graph(const std::vector<vertex_t> &vertices,
@@ -235,7 +245,7 @@ class Graph {
         return links;
     }
 
-    bool has_vertex(vertex_id u) {
+    bool has_vertex(vertex_id u) const {
         return _vertices.find(u) != std::end(_vertices);
     }
 
@@ -338,16 +348,41 @@ class Graph {
             std::cout << "shared:" << v.second.use_count() << "\n";
     }
 
-  private:
-    std::pair<vertex_id, vertex_id> generate_edge(std::size_t limit) {
-        static std::random_device gen;
-        static std::uniform_int_distribution<std::size_t> uniform(1, limit);
-        vertex_id u, v;
-        do {
-            u = uniform(gen), v = uniform(gen);
-        } while (adjacent(u, v));
-        return std::make_pair(u, v);
+    static void unit_testing() noexcept {
+        std::cout << " ----------- Testing Graph ---------------\n";
+
+        int n_verts = 0, n_edges = 0;
+        {
+            Graph g;
+            int n, m;
+
+            std::cin >> n >> m;
+            while (n--) {
+                int u, v;
+                std::cin >> u >> v;
+                if (not g.has_vertex(u))
+                    g.add_vertex(u, u);
+                if (not g.has_vertex(v))
+                    g.add_vertex(v, v);
+                g.add_directed_edge(u, v, 1);
+            }
+            n_verts = g.vertices().size(), n_edges = g.edges().size();
+            std::cout << "graph has " << n_verts << " vertices and " << n_edges
+                      << " edges\n";
+        }
+        {
+            int k = (n_verts * (n_verts - 1));
+            std::cout << "complete graph has " << k << " edges\n";
+            std::cout << std::endl;
+        }
+        for (double d = 0; d <= 1.05; d += 0.05) {
+            Graph h{n_verts, std::min(d, 1.0)};
+            std::cout << "edge density: " << d << " has " << h.edges().size()
+                      << " edges\n";
+        }
     }
+
+  private:
 
     template <typename... Args>
     void vertex_check(bool in, vertex_id id, const Args &... msg) const {
