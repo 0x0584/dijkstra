@@ -21,22 +21,24 @@ Graph::Graph(int n_vertices, double edge_density) {
         do {
             u = verts(gen), v = verts(gen);
         } while (v == u or adjacent(u, v));
-        add_edge(u, v, vals(gen));
+        add_edge({u, v}, vals(gen));
     }
     std::cout << "\n";
 }
 
-Graph::Graph(const std::vector<vertex_t> &vertices,
-             const std::vector<edge_t> &edges, bool directed) {
-    using std::get;
+Graph::Graph(
+    const std::vector<std::pair<vertex_id, vertex_value_t>> &vertices,
+    const std::vector<std::pair<std::pair<vertex_id, vertex_id>, edge_weight_t>>
+        &edges,
+    bool directed) {
 
     for (const auto &v : vertices)
         add_vertex(v.first, v.second);
     for (const auto &e : edges) {
         if (directed)
-            add_directed_edge(get<0>(e), get<1>(e), get<2>(e));
+            add_directed_edge(e.first, e.second);
         else
-            add_edge(get<0>(e), get<1>(e), get<2>(e));
+            add_edge(e.first, e.second);
     }
 }
 
@@ -48,24 +50,21 @@ Graph &Graph::operator=(Graph &&other) noexcept {
     return *this;
 }
 
-std::vector<Graph::vertex_t> Graph::vertices() const {
-    std::vector<vertex_t> nodes;
-    const auto resolve = [](const auto &pair) {
-        return Vertex::make(pair.second);
-    };
+std::vector<vertex_id> Graph::vertices() const {
+    std::vector<vertex_id> nodes;
     nodes.reserve(_vertices.size());
-    std::transform(itr_range(_vertices), std::back_inserter(nodes), resolve);
+    std::transform(itr_range(_vertices), std::back_inserter(nodes),
+                   [](const auto &pair) { return pair.second->identity(); });
     return nodes;
 }
 
-std::vector<Graph::edge_t> Graph::edges() const {
-    std::vector<edge_t> links;
-    const auto resolve = [&links](const auto &pair) {
+std::vector<std::pair<vertex_id, vertex_id>> Graph::edges() const {
+    std::vector<std::pair<vertex_id, vertex_id>> links;
+    std::for_each(itr_range(_vertices), [&links](const auto &pair) {
         const auto &v_edges = pair.second->edges();
         return std::transform(itr_range(v_edges), std::back_inserter(links),
-                              [](auto e) { return Edge::make(e); });
-    };
-    std::for_each(itr_range(_vertices), resolve);
+                              [](const auto &e) { return e; });
+    });
     links.shrink_to_fit();
     return links;
 }
@@ -74,12 +73,7 @@ bool Graph::has_vertex(vertex_id u) const {
     return _vertices.find(u) != std::end(_vertices);
 }
 
-Graph::vertex_t Graph::vertex(vertex_id u) const {
-    vertex_check(true, u, "vertex ", u, " is not found");
-    return Vertex::make(_vertices.at(u));
-}
-
-const Graph::vertex_value_t &Graph::value(vertex_id u) const {
+const vertex_value_t &Graph::value(vertex_id u) const {
     vertex_check(true, u, "vertex ", u, " is not found");
     return _vertices.at(u)->value();
 }
@@ -89,23 +83,14 @@ void Graph::value(vertex_id u, const vertex_value_t &val) {
     _vertices.at(u)->value(val);
 }
 
-std::vector<Graph::edge_t> Graph::edges(vertex_id u) const {
-    std::vector<edge_t> links;
-    auto v_edges = _vertices.at(u)->edges();
-    links.reserve(v_edges.size());
-    std::transform(itr_range(v_edges), std::back_inserter(links),
-                   [](auto edge) { return Edge::make(edge); });
-    return links;
+std::vector<std::pair<vertex_id, vertex_id>> Graph::edges(vertex_id u) const {
+    vertex_check(true, u, "vertex ", u, " is not found");
+    return _vertices.at(u)->edges();
 }
 
-std::vector<Graph::vertex_t> Graph::neighbors(vertex_id u) const {
+std::vector<vertex_id> Graph::neighbors(vertex_id u) const {
     vertex_check(true, u, "vertex ", u, " is not found");
-    std::vector<vertex_t> nodes;
-    auto neis = _vertices.at(u)->neighbors();
-    nodes.reserve(neis.size());
-    std::transform(itr_range(neis), std::back_inserter(nodes),
-                   [](auto vertex) { return Vertex::make(vertex); });
-    return nodes;
+    return _vertices.at(u)->neighbors();
 }
 
 void Graph::add_vertex(vertex_id u, const vertex_value_t &val) {
@@ -113,7 +98,10 @@ void Graph::add_vertex(vertex_id u, const vertex_value_t &val) {
     _vertices.emplace(u, std::make_shared<Vertex>(u, val));
 }
 
-void Graph::remove_vertex(vertex_id u) { _vertices.erase(u); }
+void Graph::remove_vertex(vertex_id u) {
+    vertex_check(true, u, "vertex ", u, " is not found");
+    _vertices.erase(u);
+}
 
 bool Graph::adjacent(vertex_id from, vertex_id to) const {
     vertex_check(true, from, "vertex ", from, " is not found");
@@ -121,87 +109,57 @@ bool Graph::adjacent(vertex_id from, vertex_id to) const {
     return _vertices.at(from)->adjacent(_vertices.at(to));
 }
 
-Graph::edge_t Graph::edge(vertex_id from, vertex_id to) const {
-    vertex_check(true, from, "vertex ", from, " is not found");
-    vertex_check(true, to, "vertex ", to, " is not found");
-    if (not adjacent(from, to))
-        throw std::runtime_error("no edge between " + std::to_string(from) +
-                                 " and " + std::to_string(to));
-    return Edge::make(_vertices.at(from)->edge(_vertices.at(to)));
+bool Graph::adjacent(std::pair<vertex_id, vertex_id> e) const {
+    return adjacent(e.first, e.second);
 }
 
-const Graph::edge_weight_t &Graph::weight(vertex_id from, vertex_id to) const {
+const edge_weight_t &Graph::weight(std::pair<vertex_id, vertex_id> e) const {
+    auto &&[from, to] = e;
     vertex_check(true, from, "vertex ", from, " is not found");
     vertex_check(true, to, "vertex ", to, " is not found");
     return _vertices.at(from)->edge(_vertices.at(to))->weight();
 }
 
-void Graph::weight(vertex_id from, vertex_id to, const edge_weight_t &wei) {
+void Graph::weight(std::pair<vertex_id, vertex_id> e,
+                   const edge_weight_t &wei) {
+    auto &&[from, to] = e;
     vertex_check(true, from, "vertex ", from, " is not found");
     vertex_check(true, to, "vertex ", to, " is not found");
     _vertices.at(from)->edge(_vertices.at(to))->weight(wei);
 }
 
-void Graph::add_directed_edge(vertex_id from, vertex_id to,
+void Graph::add_directed_edge(std::pair<vertex_id, vertex_id> e,
                               const edge_weight_t &wei) const {
+    auto &&[from, to] = e;
     vertex_check(true, from, "vertex ", from, " is not found");
     vertex_check(true, to, "vertex ", to, " is not found");
     _vertices.at(from)->add_directed_edge(_vertices.at(to), wei);
 }
 
-void Graph::add_edge(vertex_id from, vertex_id to,
+void Graph::add_edge(std::pair<vertex_id, vertex_id> e,
                      const edge_weight_t &wei) const {
-    add_edge(from, to, wei, wei);
+    add_edge(e, wei, wei);
 }
 
-void Graph::add_edge(vertex_id from, vertex_id to, const edge_weight_t &wei,
+void Graph::add_edge(std::pair<vertex_id, vertex_id> e,
+                     const edge_weight_t &wei,
                      const edge_weight_t &re_wei) const {
-    add_directed_edge(from, to, wei);
-    add_directed_edge(to, from, re_wei);
+    add_directed_edge(e, wei);
+    add_directed_edge({e.second, e.first}, re_wei);
 }
 
-void Graph::remove_edge(vertex_id from, vertex_id to) const {
+void Graph::remove_edge(std::pair<vertex_id, vertex_id> e) const {
+    auto &&[from, to] = e;
     vertex_check(true, from, "vertex ", from, " is not found");
     vertex_check(true, to, "vertex ", to, " is not found");
     _vertices.at(from)->remove_edge(_vertices.at(to));
 }
 
-void Graph::remove_directed_edge(vertex_id from, vertex_id to) const {
+void Graph::remove_directed_edge(std::pair<vertex_id, vertex_id> e) const {
+    auto &&[from, to] = e;
     vertex_check(true, from, "vertex ", from, " is not found");
     vertex_check(true, to, "vertex ", to, " is not found");
     _vertices.at(from)->remove_directed_edge(_vertices.at(to));
 }
 
-void Graph::unit_testing() noexcept {
-    std::cout << " ----------- Testing Graph ---------------\n";
-
-    int n_verts = 0, n_edges = 0;
-    {
-        Graph g;
-        int n, m;
-
-        std::cin >> n >> m;
-        while (n--) {
-            int u, v;
-            std::cin >> u >> v;
-            if (not g.has_vertex(u))
-                g.add_vertex(u, u);
-            if (not g.has_vertex(v))
-                g.add_vertex(v, v);
-            g.add_directed_edge(u, v, 1);
-        }
-        n_verts = g.vertices().size(), n_edges = g.edges().size();
-        std::cout << "graph has " << n_verts << " vertices and " << n_edges
-                  << " edges\n";
-    }
-    {
-        int k = (n_verts * (n_verts - 1));
-        std::cout << "complete graph has " << k << " edges\n";
-        std::cout << std::endl;
-    }
-    for (double d = 0; d <= 1.05; d += 0.05) {
-        Graph h{n_verts, std::min(d, 1.0)};
-        std::cout << "edge density: " << d << " has " << h.edges().size()
-                  << " edges\n";
-    }
-}
+void Graph::unit_testing() noexcept {}
