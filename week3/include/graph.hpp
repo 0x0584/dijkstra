@@ -116,6 +116,9 @@ class Vertex : public std::enable_shared_from_this<Vertex> {
     /// \return true if vertex v is adjacent to this vertex
     bool adjacent(vertex_pref v) const;
 
+    /// \return edge to vertrex v
+    const edge_ptr &edge(vertex_pref v) const;
+
     /// \brief add a directed edge from vertex v to vertex u
     ///
     /// \param v pointer to vertex as sink to the edge

@@ -106,7 +106,7 @@ class PQ {
     }
 
     /// \return true is empty, false otherwise
-    bool empty() const noexcept { return items.empty(); }
+    bool empty() const noexcept { return pq.empty(); }
 
     /// \brief
     int size() const noexcept { return pq.size(); }
